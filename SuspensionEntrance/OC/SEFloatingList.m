@@ -165,14 +165,16 @@ static CGFloat const kSEFloatingListItemPadding = 15.f;
 
     CGFloat const SCREEN_WIDTH = UIScreen.mainScreen.bounds.size.width;
     CGFloat const SCREEN_HEIGHT = UIScreen.mainScreen.bounds.size.height;
-    CGFloat height = [self.delegate numberOfItemsInFloatingList:self] * 90 + rect.size.height+ 15.f;
+    CGFloat height = [self.delegate numberOfItemsInFloatingList:self] * (kSEFloatingListItemHeight + kSEFloatingListItemPadding) + rect.size.height;
     BOOL inLeft = rect.origin.x <= (SCREEN_WIDTH / 2.f);
     BOOL inBottom = (rect.origin.y + height < SCREEN_HEIGHT);
     BOOL inMostBottom = !inBottom && (rect.origin.y < height);
-    // x position
     CGFloat x = inLeft ? 0.f : (SCREEN_WIDTH / 3.f);
     CGFloat y = inBottom ? (rect.origin.y + rect.size.height + kSEFloatingListItemPadding) : (rect.origin.y - kSEFloatingListItemPadding - kSEFloatingListItemHeight);
-    if (inMostBottom) y = SCREEN_HEIGHT - kSEFloatingListItemHeight - 5.f;
+    if (inMostBottom) {
+        y = SCREEN_HEIGHT - kSEFloatingListItemHeight - 5.f;
+        if (@available(iOS 11.0, *)) y -= UIApplication.sharedApplication.keyWindow.safeAreaInsets.bottom;
+    }
     NSArray<SEFloatingListItem *> *subviews = [inMostBottom ? [[self.listItems reverseObjectEnumerator] allObjects] : self.listItems copy];
     
     for (SEFloatingListItem *itemView in subviews) {
