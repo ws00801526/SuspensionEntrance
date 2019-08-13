@@ -19,7 +19,6 @@ static CGFloat const kSEFloatingListItemPadding = 15.f;
 @property (weak, nonatomic) UILabel *titleLabel;
 @property (weak, nonatomic) UIButton *deleteButton;
 @property (assign, nonatomic, getter=isEditable) BOOL editable;
-
 @property (assign, nonatomic) UIRectCorner corners;
 
 @property (strong, nonatomic) CAShapeLayer *backgroundLayer;
@@ -27,9 +26,11 @@ static CGFloat const kSEFloatingListItemPadding = 15.f;
 @end
 
 @interface SEFloatingList ()
+@property (weak, nonatomic) SEFloatingListItem *tempItem;
 @end
 
 @implementation SEFloatingListItem
+@synthesize selected = _selected;
 @synthesize highlighted = _highlighted;
 
 - (instancetype)initWithItem:(id<SEItem>)item {
@@ -96,16 +97,24 @@ static CGFloat const kSEFloatingListItemPadding = 15.f;
     self.deleteButton.hidden = !editable;
 }
 
+- (void)setSelected:(BOOL)selected {
+    if (_selected == selected) return;
+    _selected = selected;
+    CGFloat scale = selected ? 1.1f : 1.f;
+    self.transform = CGAffineTransformMakeScale(scale, scale);
+}
+
 - (void)setHighlighted:(BOOL)highlighted {
     
     if (_highlighted == highlighted) return;
     _highlighted = highlighted;
-    CGFloat scale = highlighted ? 1.1f : 1.f;
-    self.transform = CGAffineTransformMakeScale(scale, scale);
+    UIColor *color = highlighted ? [UIColor colorWithWhite:0.75 alpha:1.f] : [UIColor whiteColor];
+    self.backgroundLayer.fillColor = color.CGColor;
 }
 
 #pragma mark - Getter
 
+- (BOOL)isSelected { return _selected; }
 - (BOOL)isHighlighted { return _highlighted; }
 - (BOOL)isEditable { return !self.deleteButton.isHidden; }
 
@@ -128,20 +137,39 @@ static CGFloat const kSEFloatingListItemPadding = 15.f;
 }
 
 - (void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
+
     [super touchesBegan:touches withEvent:event];
-    
-    SEFloatingListItem *listItem = nil;
     CGPoint point = [[touches anyObject] locationInView:self];
     for (SEFloatingListItem *subView in self.listItems) {
-        if (CGRectContainsPoint(subView.frame, point)) { listItem = subView; break; }
-    }
-    
-    if (listItem.item) {
-        if (self.delegate && [self.delegate respondsToSelector:@selector(floatingList:didSelectItem:)]) {
-            [self.delegate floatingList:self didSelectItem:listItem.item];
-            [self dismissWithAnimated:YES];
+        if (CGRectContainsPoint(subView.frame, point)) {
+            self.tempItem = subView;
+            self.tempItem.highlighted = YES;
+            break;
         }
-    } else { [self dismissWithAnimated:YES]; }
+    }
+}
+
+- (void)touchesEnded:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
+    
+    [super touchesEnded:touches withEvent:event];
+    if (self.tempItem.highlighted) {
+        if (self.delegate && [self.delegate respondsToSelector:@selector(floatingList:didSelectItem:)]) {
+            [self.delegate floatingList:self didSelectItem:self.tempItem.item];
+        }
+    }
+    [self dismissWithAnimated:YES];
+}
+
+- (void)touchesMoved:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
+ 
+    [super touchesMoved:touches withEvent:event];
+    CGPoint point = [[touches anyObject] locationInView:self];
+    if (self.tempItem) self.tempItem.highlighted = CGRectContainsPoint(self.tempItem.frame, point);
+}
+
+- (void)touchesCancelled:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
+    [super touchesCancelled:touches withEvent:event];
+    self.tempItem = nil;
 }
 
 #pragma mark - Public
@@ -180,6 +208,7 @@ static CGFloat const kSEFloatingListItemPadding = 15.f;
     for (SEFloatingListItem *itemView in subviews) {
         NSUInteger const idx = [self.listItems indexOfObject:itemView];
         itemView.alpha = .0f;
+        itemView.selected = NO;
         itemView.highlighted = NO;
         itemView.frame = (CGRect) { CGPointMake(inLeft ? -itemView.frame.size.width : SCREEN_WIDTH, y), itemView.frame.size };
         itemView.corners = inLeft ? (UIRectCornerTopRight | UIRectCornerBottomRight) : (UIRectCornerTopLeft | UIRectCornerBottomLeft);

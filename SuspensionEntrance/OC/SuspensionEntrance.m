@@ -101,6 +101,23 @@
     return nil;
 }
 
+- (void)pushEntranceItem:(UIViewController<SEItem> *)item {
+
+    if (![self.items containsObject:item]) return;
+    NSMutableArray<UIViewController *> *viewControllers = [self.navigationController.viewControllers mutableCopy];
+    if (viewControllers.lastObject.se_isEntrance) { [viewControllers removeLastObject]; }
+    [viewControllers addObject:item];
+    [self.navigationController setViewControllers:[viewControllers copy] animated:YES];
+//    UIViewController *currentItem = self.navigationController.visibleViewController;
+//    if (!currentItem.se_isEntrance) currentItem = nil;
+//    if (currentItem) {
+//        NSMutableArray<UIViewController *> *viewControllers = [self.navigationController.viewControllers mutableCopy];
+//        [viewControllers removeObject:currentItem];
+//    } else {
+//        [self.navigationController pushViewController:item animated:YES];
+//    }
+}
+
 #pragma mark - Actions
 
 - (void)handleTransition:(UIScreenEdgePanGestureRecognizer *)pan {
@@ -200,16 +217,17 @@
     CGPoint point = [gesture locationInView:gesture.view];
     point = [self.floatingList convertPoint:point fromView:gesture.view];
     for (SEFloatingListItem *listItem in self.floatingList.listItems) {
-        listItem.highlighted = CGRectContainsPoint(listItem.frame, point);
+        listItem.selected = CGRectContainsPoint(listItem.frame, point);
     }
 }
 
 - (void)floatingBall:(SEFloatingBall *)floatingBall pressDidEnded:(UILongPressGestureRecognizer *)gesture {
     // will end, check floating list is selected
     for (SEFloatingListItem *listItem in self.floatingList.listItems) {
-        if (listItem.isHighlighted) {
-            if ([self.items containsObject:listItem.item])
-                [self.navigationController pushViewController:(UIViewController *)listItem.item animated:YES];
+        if (listItem.isSelected) {
+            [self pushEntranceItem:listItem.item];
+//            if ([self.items containsObject:listItem.item])
+//                [self.navigationController pushViewController:(UIViewController *)listItem.item animated:YES];
             break;
         }
     }
@@ -227,7 +245,7 @@
 }
 
 - (void)floatingList:(SEFloatingList *)list didSelectItem:(id<SEItem>)item {
-    if ([self.items containsObject:item]) [self.navigationController pushViewController:(UIViewController *)item animated:YES];
+    [self pushEntranceItem:item];
 }
 
 - (BOOL)floatingList:(SEFloatingList *)list willDeleteItem:(id<SEItem>)item {

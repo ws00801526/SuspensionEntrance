@@ -28,6 +28,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface SEFloatingListItem : UIView
 
+@property (assign, nonatomic, getter=isSelected) BOOL selected;
 @property (assign, nonatomic, getter=isHighlighted) BOOL highlighted;
 @property (weak,   nonatomic, readonly) id<SEItem> item;
 
