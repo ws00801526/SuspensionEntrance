@@ -70,6 +70,7 @@ BOOL kSEFloatAreaContainsPoint(CGPoint point) {
 - (void)willMoveToSuperview:(UIView *)newSuperview {
     [super willMoveToSuperview:newSuperview];
     if (newSuperview) {
+        // reset highlighted & frame
         self.highlighted = NO;
         self.frame = CGRectMake(UIScreen.mainScreen.bounds.size.width, UIScreen.mainScreen.bounds.size.height, kSEFloatingAreaWidth, kSEFloatingAreaWidth);
     }
@@ -78,7 +79,6 @@ BOOL kSEFloatAreaContainsPoint(CGPoint point) {
 #pragma mark - Public
 
 - (void)setTitle:(NSString *)title forState:(SEFloatingAreaState)state {
-    
     if (title.length <= 0) return;
     [self.stateTitles setObject:title forKey:@(state)];
 }

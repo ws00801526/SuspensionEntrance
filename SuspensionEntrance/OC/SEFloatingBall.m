@@ -7,6 +7,7 @@
 
 #import "SEFloatingBall.h"
 
+static NSString * const kSEFloatingBallFrameKey = @"com.fraker.xm.se.ball.frame";
 static const CGFloat kSEFloatingBallRadius = 30.f;
 static const CGFloat kSEScreenWidth() { return UIScreen.mainScreen.bounds.size.width; }
 static const CGFloat kSEScreenHeight() { return UIScreen.mainScreen.bounds.size.height; }
@@ -55,9 +56,16 @@ static const CGFloat kSEScreenHeight() { return UIScreen.mainScreen.bounds.size.
     _backgroundLayer.mask = [self maskLayerWithRectCorners:UIRectCornerAllCorners];
     [self.contentView.layer insertSublayer:_backgroundLayer atIndex:0];
     
-    
-    self.frame = CGRectMake(100, 100, kSEFloatingBallRadius * 2.f, kSEFloatingBallRadius * 2.f);
-    self.layer.mask = [self maskLayerWithRectCorners:UIRectCornerAllCorners];
+    NSString *rectValue = [[NSUserDefaults standardUserDefaults] stringForKey:kSEFloatingBallFrameKey];
+    if (rectValue.length > 0) {
+        self.frame = CGRectFromString(rectValue);
+    } else {
+        CGPoint origin = CGPointMake(kSEScreenWidth() - kSEFloatingBallRadius * 2.f, kSEScreenHeight() / 2.f - kSEFloatingBallRadius);
+        self.frame = (CGRect){ origin, CGSizeMake(kSEFloatingBallRadius * 2.f, kSEFloatingBallRadius * 2.f) };
+    }
+    BOOL isLeft = (self.center.x < kSEScreenWidth() / 2.0);
+    UIRectCorner corners = isLeft ? (UIRectCornerTopRight | UIRectCornerBottomRight) : (UIRectCornerTopLeft | UIRectCornerBottomLeft);
+    self.layer.mask = [self maskLayerWithRectCorners:corners];
 }
 
 - (void)setupGestures {
@@ -143,6 +151,7 @@ static const CGFloat kSEScreenHeight() { return UIScreen.mainScreen.bounds.size.
     } completion:^(BOOL finished) {
         UIRectCorner corners = isLeft ? (UIRectCornerTopRight | UIRectCornerBottomRight) : (UIRectCornerTopLeft | UIRectCornerBottomLeft);
         self.layer.mask = [self maskLayerWithRectCorners:corners];
+        [[NSUserDefaults standardUserDefaults] setObject:NSStringFromCGRect(self.frame) forKey:kSEFloatingBallFrameKey];
     }];
 }
 

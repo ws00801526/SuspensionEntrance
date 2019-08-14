@@ -12,20 +12,22 @@
 #import "SEFloatingArea.h"
 #import "SEFloatingList.h"
 
+
+static NSString *const kSEItemClassKey = @"class";
+static NSString *const kSEItemTitleKey = @"title";
+static NSString *const kSEItemIconUrlKey = @"iconUrl";
+static NSString *const kSEItemUserInfoKey = @"userInfo";
+
 @interface SuspensionEntrance () <UIGestureRecognizerDelegate>
 
 @property (strong, nonatomic) SEFloatingBall *floatingBall;
 @property (strong, nonatomic) SEFloatingArea *floatingArea;
 @property (strong, nonatomic) SEFloatingList *floatingList;
 
-@property (weak, nonatomic) __kindof UIViewController<SEItem>* tempEntranceItem;
-
 @property (strong, nonatomic) SETransitionAnimator *animator;
 @property (strong, nonatomic) UIPercentDrivenInteractiveTransition *interactive;
 
-@property (strong, nonatomic, readonly)  NSMutableSet<Class> *monitorClasses;
-@property (strong, nonatomic, readonly)  NSMutableSet<NSString *> *panGestureKeys;
-@property (strong, nonatomic, readwrite) NSMutableArray<id<SEItem>> *items;
+@property (strong, nonatomic, readwrite) NSMutableArray<UIViewController<SEItem> *> *items;
 
 @property (strong, nonatomic, readonly)  UINavigationController *navigationController;
 
@@ -38,15 +40,33 @@
 
 @implementation UIViewController (SEPrivate)
 
-- (BOOL)se_canBeEntrance {
-    if (![self conformsToProtocol:@protocol(SEItem)]) return NO;
-    return [[SuspensionEntrance shared].monitorClasses containsObject:[self class]];
-}
+- (BOOL)se_canBeEntrance { return [self conformsToProtocol:@protocol(SEItem)]; }
 
 - (BOOL)se_isEntrance {
     if (!self.se_canBeEntrance) return NO;
     return [[SuspensionEntrance shared].items containsObject:(id<SEItem>)self];
 }
+
+@end
+
+@interface NSDictionary (SEPrivate) <SEItem>
+@end
+
+@implementation NSDictionary (SEPrivate)
+@dynamic entranceTitle;
+@dynamic entranceIconUrl;
+@dynamic entranceUserInfo;
+
+- (Class)entranceClass {
+    
+    NSString *clazz = [self objectForKey:kSEItemClassKey];
+    if (clazz.length <= 0) return NULL;
+    return NSClassFromString(clazz);
+}
+
+- (NSURL *)entranceIconUrl { return [self objectForKey:kSEItemTitleKey]; }
+- (NSString *)entranceTitle { return [self objectForKey:kSEItemIconUrlKey]; }
+- (NSDictionary *)entranceUserInfo { return [self objectForKey:kSEItemUserInfoKey]; }
 
 @end
 
@@ -63,59 +83,84 @@
         _vibratable = YES;
         
         _items = [NSMutableArray array];
-        _monitorClasses = [NSMutableSet set];
-        _panGestureKeys = [NSMutableSet set];
+        _archivedPath = [[NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) firstObject] stringByAppendingPathComponent:@"entrance.items"];
 
         _floatingBall = [[SEFloatingBall alloc] initWithEffect:[UIBlurEffect effectWithStyle:UIBlurEffectStyleLight]];
         _floatingBall.delegate = (id<SEFloatingBallDelegate>)self;
         
         _floatingArea = [[SEFloatingArea alloc] initWithFrame:CGRectZero];
         
-//        _floatingList = [[SEFloatingList alloc] initWithEffect:[UIBlurEffect effectWithStyle:UIBlurEffectStyleLight]];
         _floatingList = [[SEFloatingList alloc] initWithFrame:CGRectZero];
         _floatingList.delegate = (id<SEFloatingListDelegate>)self;
     }
+    // need to get in next main loop, otherwise self.window may be nil
+    dispatch_async(dispatch_get_main_queue(), ^ { [self unarchiveEntranceItems]; });
     return self;
 }
 
-#pragma mark - Public
-
-
 #pragma mark - Private
-
-- (BOOL)isEntranceViewController:(__kindof UIViewController *)viewController {
-    if (!viewController) return NO;
-    if (![viewController conformsToProtocol:@protocol(SEItem)]) { return NO; }
-    
-    for (id<SEItem> item in self.items) {
-        if (item == viewController) return YES;
-        if ([item.entranceUrl isEqual:[(id<SEItem>)viewController entranceUrl]]) return YES;
-    }
-    return NO;
-}
-
-- (UIPanGestureRecognizer *)panGestureOfController:(__kindof UINavigationController *)controller {
-    for (NSString *key in self.panGestureKeys) {
-        if ([controller valueForKey:key]) { return [controller valueForKey:key]; }
-    }
-    return nil;
-}
 
 - (void)pushEntranceItem:(UIViewController<SEItem> *)item {
 
     if (![self.items containsObject:item]) return;
     NSMutableArray<UIViewController *> *viewControllers = [self.navigationController.viewControllers mutableCopy];
-    if (viewControllers.lastObject.se_isEntrance) { [viewControllers removeLastObject]; }
-    [viewControllers addObject:item];
-    [self.navigationController setViewControllers:[viewControllers copy] animated:YES];
-//    UIViewController *currentItem = self.navigationController.visibleViewController;
-//    if (!currentItem.se_isEntrance) currentItem = nil;
-//    if (currentItem) {
-//        NSMutableArray<UIViewController *> *viewControllers = [self.navigationController.viewControllers mutableCopy];
-//        [viewControllers removeObject:currentItem];
-//    } else {
-//        [self.navigationController pushViewController:item animated:YES];
-//    }
+    if ([viewControllers containsObject:item]) {
+        [self.navigationController popToViewController:item animated:YES];
+    } else {
+        if (viewControllers.lastObject.se_isEntrance) { [viewControllers removeLastObject]; }
+        [viewControllers addObject:item];
+        [self.navigationController setViewControllers:[viewControllers copy] animated:YES];
+    }
+}
+
+- (CGRect)floatingRectOfOperation:(UINavigationControllerOperation)operation {
+    CGRect rect = CGRectZero;
+    switch (operation) {
+        case UINavigationControllerOperationPush:
+            rect = [self.window convertRect:self.floatingList.floatingRect fromView:self.floatingList];
+            break;
+        case UINavigationControllerOperationPop:
+            rect = [self.window convertRect:self.floatingBall.floatingRect fromView:self.floatingBall];
+            break;
+        default: break;
+    }
+    if (CGRectIsEmpty(rect)) rect = self.floatingBall.frame;
+    return rect;
+}
+
+- (void)archiveEntranceItems {
+    
+    NSMutableArray *infos = [NSMutableArray array];
+    for (UIViewController<SEItem> *item in self.items) {
+        [infos addObject:@{
+                           kSEItemClassKey : NSStringFromClass(item.class),
+                           kSEItemTitleKey : item.entranceTitle ? : @"",
+                           kSEItemIconUrlKey : item.entranceIconUrl ? : [NSURL URLWithString:@""],
+                           kSEItemUserInfoKey : item.entranceUserInfo ? : @{}
+                           }];
+    }
+    
+    BOOL succ = [NSKeyedArchiver archiveRootObject:infos toFile:self.archivedPath];
+    if (!succ) { NSLog(@"archive entrance items failed :%@", self.archivedPath); }
+}
+
+- (void)unarchiveEntranceItems {
+    
+    NSArray<NSDictionary *> *infos = [NSKeyedUnarchiver unarchiveObjectWithFile:self.archivedPath];
+    if (infos.count <= 0) return;
+    
+    for (NSDictionary *info in infos) {
+
+        if (info.entranceClass == NULL) continue;
+        if (info.entranceTitle.length <= 0) continue;
+        if (![info.entranceClass respondsToSelector:@selector(entranceWithItem:)]) continue;
+        
+        [self->_items addObject:[info.entranceClass entranceWithItem:info]];
+    }
+    
+    [self.floatingList reloadData];
+    if (self.items.count <= 0) { [self.floatingBall removeFromSuperview]; }
+    else if (!self.floatingBall.superview) { [self.window addSubview:self.floatingBall]; }
 }
 
 #pragma mark - Actions
@@ -164,6 +209,7 @@
                         NSLog(@"floating is available");
                         if (!self.floatingBall.superview) { [self.window addSubview:self.floatingBall]; }
                         if (![self.items containsObject:tempItem]) { [self->_items addObject:tempItem]; }
+                        [self archiveEntranceItems];
                         [self.animator finishContinousPopAnimation];
                         [self.interactive finishInteractiveTransition];
                         [self.floatingList reloadData];
@@ -243,12 +289,13 @@
 }
 
 - (void)floatingList:(SEFloatingList *)list didSelectItem:(id<SEItem>)item {
-    [self pushEntranceItem:item];
+    [self pushEntranceItem:(UIViewController<SEItem> *)item];
 }
 
 - (BOOL)floatingList:(SEFloatingList *)list willDeleteItem:(id<SEItem>)item {
     if (![self.items containsObject:item]) return NO;
-    [self->_items removeObject:item];
+    [self->_items removeObject:(UIViewController<SEItem> *)item];
+    [self archiveEntranceItems];
     return YES;
 }
 
@@ -272,14 +319,15 @@
 
     if ([controller isKindOfClass:[UINavigationController class]]) return controller;
     if (controller.navigationController) return controller.navigationController;
-    
-    while (controller.presentingViewController) {
-        controller = controller.presentingViewController;
-        if ([controller isKindOfClass:[UINavigationController class]] || controller.navigationController) break;
-    }
-    
-    if ([controller isKindOfClass:[UINavigationController class]]) return controller;
-    if (controller.navigationController) return controller.navigationController;
+
+    // ???: is it necessary?
+//    while (controller.presentingViewController) {
+//        controller = controller.presentingViewController;
+//        if ([controller isKindOfClass:[UINavigationController class]] || controller.navigationController) break;
+//    }
+//
+//    if ([controller isKindOfClass:[UINavigationController class]]) return controller;
+//    if (controller.navigationController) return controller.navigationController;
     
     return nil;
 }
@@ -296,16 +344,6 @@
 }
 
 + (instancetype)allocWithZone:(struct _NSZone *)zone { return [SuspensionEntrance shared]; }
-
-+ (void)registerMonitorClass:(Class)clazz {
-    if (!clazz) return;
-    [[SuspensionEntrance shared].monitorClasses addObject:clazz];
-}
-
-+ (void)registerPanGestureKey:(NSString *)key {
-    if (key.length <= 0) return;
-    [[SuspensionEntrance shared].panGestureKeys addObject:key];
-}
 
 @end
 
