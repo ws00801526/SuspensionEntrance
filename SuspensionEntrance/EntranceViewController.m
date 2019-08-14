@@ -13,11 +13,30 @@
 
 @implementation EntranceViewController
 
++ (instancetype)entranceWithItem:(id<SEItem>)item {
+    EntranceViewController *controller = [[EntranceViewController alloc] initWithNibName:nil bundle:nil];
+    controller.entranceTitle = item.entranceTitle;
+    controller.entranceIconUrl = item.entranceIconUrl;
+    controller.entranceUserInfo = item.entranceUserInfo;
+    return controller;
+}
+
 - (void)viewDidLoad {
     [super viewDidLoad];
     self.view.backgroundColor = [UIColor purpleColor];
+    
+    if (self.entranceTitle.length <= 0) {
+        NSArray *titles = @[
+                            @"我是测试标题一",
+                            @"我是测试标题二, 但是我的标题很长很长很长很长很长很长很长很长很长很长很长很长很长很长很长很长",
+                            @"百度的测试界面",
+                            @"优酷测试界面",
+                            @"Google一下,世界更精彩",
+                            ];
+        
+        self.entranceTitle = [titles objectAtIndex:arc4random() % 5];
+    }
 }
-
 
 - (void)dealloc {
     
@@ -26,10 +45,5 @@
     NSLog(@"self.gestures :%@", self.view.gestureRecognizers);
 #endif
 }
-
-#pragma mark - SEItem
-
-- (NSURL *)entranceUrl { return [NSURL URLWithString:@"https://www.baidu.com"]; }
-- (NSString *)entranceTitle { return @"测试界面大了点马良看到没萨克拉莫德凯撒了; 没打卡洛斯;俺们"; }
 
 @end

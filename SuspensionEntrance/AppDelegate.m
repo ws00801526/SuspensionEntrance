@@ -25,9 +25,7 @@
 //        SEFloatingBall *ballView = [[SEFloatingBall alloc] initWithEffect:[UIBlurEffect effectWithStyle:UIBlurEffectStyleLight]];
 //        [self.window insertSubview:ballView atIndex:100000];
 //    });
-    
-    [SuspensionEntrance registerMonitorClass:[EntranceViewController class]];
-    
+        
     return YES;
 }
 
