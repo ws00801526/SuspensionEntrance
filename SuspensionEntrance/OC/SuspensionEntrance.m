@@ -64,8 +64,8 @@ static NSString *const kSEItemUserInfoKey = @"userInfo";
     return NSClassFromString(clazz);
 }
 
-- (NSURL *)entranceIconUrl { return [self objectForKey:kSEItemTitleKey]; }
-- (NSString *)entranceTitle { return [self objectForKey:kSEItemIconUrlKey]; }
+- (NSString *)entranceTitle { return [self objectForKey:kSEItemTitleKey]; }
+- (NSURL *)entranceIconUrl  { return [self objectForKey:kSEItemIconUrlKey]; }
 - (NSDictionary *)entranceUserInfo { return [self objectForKey:kSEItemUserInfoKey]; }
 
 @end
@@ -128,6 +128,15 @@ static NSString *const kSEItemUserInfoKey = @"userInfo";
     return rect;
 }
 
+- (void)showItemsFullAlert {
+    
+    NSString *message = [NSString stringWithFormat:@"最多设置%ld个浮窗", self.maxCount];
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:nil message:message preferredStyle:UIAlertControllerStyleAlert];
+    UIAlertAction *confirm = [UIAlertAction actionWithTitle:@"确定" style:UIAlertActionStyleDefault handler:NULL];
+    [alert addAction:confirm];
+    [self.navigationController.visibleViewController showDetailViewController:alert sender:nil];
+}
+
 - (void)archiveEntranceItems {
     
     NSMutableArray *infos = [NSMutableArray array];
@@ -141,7 +150,9 @@ static NSString *const kSEItemUserInfoKey = @"userInfo";
     }
     
     BOOL succ = [NSKeyedArchiver archiveRootObject:infos toFile:self.archivedPath];
+#if DEBUG
     if (!succ) { NSLog(@"archive entrance items failed :%@", self.archivedPath); }
+#endif
 }
 
 - (void)unarchiveEntranceItems {
@@ -155,7 +166,10 @@ static NSString *const kSEItemUserInfoKey = @"userInfo";
         if (info.entranceTitle.length <= 0) continue;
         if (![info.entranceClass respondsToSelector:@selector(entranceWithItem:)]) continue;
         
-        [self->_items addObject:[info.entranceClass entranceWithItem:info]];
+        UIViewController<SEItem> *item = [info.entranceClass entranceWithItem:info];
+        if (!item || ![item isKindOfClass:[UIViewController class]]) continue;
+        
+        [self->_items addObject:item];
     }
     
     [self.floatingList reloadData];
@@ -183,13 +197,16 @@ static NSString *const kSEItemUserInfoKey = @"userInfo";
             break;
         case UIGestureRecognizerStateChanged:
         {
-            CGPoint tPoint = [pan translationInView:self.window];
-            CGFloat x = MAX(SCREEN_WIDTH - tPoint.x + kSEFloatingAreaWidth / 2.f, SCREEN_WIDTH - kSEFloatingAreaWidth);
-            CGFloat y = MAX(SCREEN_HEIGHT - tPoint.x + kSEFloatingAreaWidth / 2.f, SCREEN_HEIGHT - kSEFloatingAreaWidth);
-            self.floatingArea.frame = (CGRect){ CGPointMake(x, y), self.floatingArea.bounds.size };
             
-            CGPoint innerPoint = [pan locationInView:self.window];
-            self.floatingArea.highlighted = kSEFloatAreaContainsPoint(innerPoint);
+            CGPoint tPoint = [pan translationInView:self.window];
+            if (self.floatingArea.superview) {
+                CGFloat x = MAX(SCREEN_WIDTH - tPoint.x + kSEFloatingAreaWidth / 2.f, SCREEN_WIDTH - kSEFloatingAreaWidth);
+                CGFloat y = MAX(SCREEN_HEIGHT - tPoint.x + kSEFloatingAreaWidth / 2.f, SCREEN_HEIGHT - kSEFloatingAreaWidth);
+                self.floatingArea.frame = (CGRect){ CGPointMake(x, y), self.floatingArea.bounds.size };
+                
+                CGPoint innerPoint = [pan locationInView:self.window];
+                self.floatingArea.highlighted = kSEFloatAreaContainsPoint(innerPoint);
+            }
             
             [self.animator updateContinousPopAnimationPercent:tPoint.x / SCREEN_WIDTH];
             [self.interactive updateInteractiveTransition:tPoint.x / SCREEN_WIDTH];
@@ -215,9 +232,9 @@ static NSString *const kSEItemUserInfoKey = @"userInfo";
                         [self.floatingList reloadData];
                     } else {
                         // floating is full
-                        NSLog(@"floating is full");
                         [self.animator cancelContinousPopAnimation];
                         [self.interactive cancelInteractiveTransition];
+                        [self showItemsFullAlert];
                     }
                 } else if (tempItem.se_isEntrance) {
                     // just ended
@@ -297,6 +314,12 @@ static NSString *const kSEItemUserInfoKey = @"userInfo";
     [self->_items removeObject:(UIViewController<SEItem> *)item];
     [self archiveEntranceItems];
     return YES;
+}
+
+- (BOOL)floatingList:(SEFloatingList *)list itemVisible:(id<SEItem>)item {
+    
+    if (!self.navigationController.viewControllers.lastObject.se_isEntrance) return YES;
+    return self.navigationController.viewControllers.lastObject != item;
 }
 
 - (void)floatingListWillShow:(SEFloatingList *)list {

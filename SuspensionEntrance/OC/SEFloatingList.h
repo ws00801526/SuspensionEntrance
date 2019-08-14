@@ -20,6 +20,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)floatingListWillHide:(SEFloatingList *)list;
 
 @optional
+- (BOOL)floatingList:(SEFloatingList *)list itemVisible:(id<SEItem>)item;
 - (void)floatingList:(SEFloatingList *)list didSelectItem:(id<SEItem>)item;
 - (BOOL)floatingList:(SEFloatingList *)list willDeleteItem:(id<SEItem>)item;
 

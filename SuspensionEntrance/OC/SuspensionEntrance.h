@@ -11,11 +11,16 @@ NS_ASSUME_NONNULL_BEGIN
 
 @protocol SEItem <NSObject>
 
-@required @property (copy  , nonatomic) NSString *entranceTitle;
-@optional @property (copy  , nonatomic, nullable) NSURL *entranceIconUrl;
-@optional @property (copy  , nonatomic, nullable) NSDictionary *entranceUserInfo;
+@required
+/// the title of entrance
+@property (copy  , nonatomic) NSString *entranceTitle;
 
 @optional
+/// the icon url of entrance
+@property (copy  , nonatomic, nullable) NSURL *entranceIconUrl;
+/// the userInfo of entrance
+@property (copy  , nonatomic, nullable) NSDictionary *entranceUserInfo;
+
 /**
  To archive & unarchive items
 
@@ -29,6 +34,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface SuspensionEntrance : NSObject
 
+/// max items can be stored. Default is 5.
 @property (assign, nonatomic) NSUInteger maxCount;
 /// The path to be archived of items. Default is ~/Documents/entrance.items.
 @property (copy  , nonatomic) NSString *archivedPath;
