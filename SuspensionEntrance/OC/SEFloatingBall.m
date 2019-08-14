@@ -159,6 +159,8 @@ static const CGFloat kSEScreenHeight() { return UIScreen.mainScreen.bounds.size.
 
 #pragma mark - Getter
 
-- (CGRect)floatingRect { return CGRectMake(0, 0, 35.f, 35.f); }
+- (CGRect)floatingRect {
+    return CGRectMake(15.f, 12.5f, 35.f, 35.f);
+}
 
 @end

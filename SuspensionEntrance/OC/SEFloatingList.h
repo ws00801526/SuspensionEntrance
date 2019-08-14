@@ -36,9 +36,10 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface SEFloatingList : UIView
 
-@property (assign, nonatomic, readonly) CGRect floatingRect;
 @property (assign, nonatomic, getter=isEditable) BOOL editable;
 @property (weak  , nonatomic, nullable) id<SEFloatingListDelegate> delegate;
+
+@property (assign, nonatomic, readonly) CGRect floatingRect;
 @property (copy  , nonatomic, readonly) NSArray<SEFloatingListItem *> *listItems;
 
 - (void)reloadData;

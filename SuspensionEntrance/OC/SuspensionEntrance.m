@@ -225,9 +225,7 @@
     // will end, check floating list is selected
     for (SEFloatingListItem *listItem in self.floatingList.listItems) {
         if (listItem.isSelected) {
-            [self pushEntranceItem:listItem.item];
-//            if ([self.items containsObject:listItem.item])
-//                [self.navigationController pushViewController:(UIViewController *)listItem.item animated:YES];
+            [self pushEntranceItem:(UIViewController<SEItem> *)listItem.item];
             break;
         }
     }
@@ -339,29 +337,23 @@
                                   animationControllerForOperation:(UINavigationControllerOperation)operation
                                                fromViewController:(UIViewController *)fromVC
                                                  toViewController:(UIViewController *)toVC {
-    CGPoint const center = self.floatingBall.center;
-    CGFloat const radius = self.floatingBall.bounds.size.height / 2.f;
-    NSLog(@"will decide animation controller for operation :%@ -- %@", fromVC, toVC);
+    
     if (operation == UINavigationControllerOperationPop) {
-        
         if (self.interactive) {
-            self.animator = [SETransitionAnimator continuousPopAnimatorWithCenter:center radius:radius];
+            CGRect const floatingRect = [self floatingRectOfOperation:operation];
+            self.animator = [SETransitionAnimator continuousPopAnimatorWithRect:floatingRect];
+        } else if (fromVC.se_isEntrance) {
+            CGRect const floatingRect = [self floatingRectOfOperation:operation];
+            self.animator = [SETransitionAnimator roundPopAnimatorWithRect:floatingRect];
         } else {
-//            if (isFromVCEntrance) {
-            if (fromVC.se_isEntrance) {
-                self.animator = [SETransitionAnimator roundPopAnimatorWithCenter:center radius:radius];
-            } else {
-                self.animator = nil;
-            }
+            self.animator = nil;
         }
     } else if (operation == UINavigationControllerOperationPush) {
-        
-        if (toVC.se_isEntrance && fromVC.se_isEntrance) {
-            // need update animation
-            self.animator = [SETransitionAnimator replaceAnimatorWithCenter:center radius:radius];
-        } else if (toVC.se_isEntrance && !fromVC.se_isEntrance) {
-            // need round animation
-            self.animator = [SETransitionAnimator roundPushAnimatorWithCenter:center radius:radius];
+        if ((toVC.se_isEntrance && fromVC.se_isEntrance) || (toVC.se_isEntrance && !fromVC.se_isEntrance)) {
+            CGRect const floatingRect = [self floatingRectOfOperation:operation];
+            self.animator = [SETransitionAnimator roundPushAnimatorWithRect:floatingRect];
+        } else {
+            self.animator = nil;
         }
     }
     return self.animator;

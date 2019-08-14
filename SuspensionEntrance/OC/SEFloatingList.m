@@ -313,6 +313,7 @@ static CGFloat const kSEFloatingListItemPadding = 15.f;
 - (CGRect)floatingRect {
 
     for (SEFloatingListItem *listItem in self.listItems) {
+        if (listItem.isSelected) return listItem.frame;
         if (listItem.isHighlighted) return listItem.frame;
     }
     return CGRectZero;

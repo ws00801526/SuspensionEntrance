@@ -23,7 +23,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface SEFloatingBall : UIVisualEffectView
 
-@property (assign, nonatomic, readonly) CGFloat floatingRect;
+@property (assign, nonatomic, readonly) CGRect floatingRect;
 @property (weak, nonatomic, nullable) id<SEFloatingBallDelegate> delegate;
 
 @end

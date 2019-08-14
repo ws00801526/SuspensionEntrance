@@ -19,19 +19,12 @@ NS_ASSUME_NONNULL_BEGIN
 @interface SETransitionAnimator : NSObject <UIViewControllerAnimatedTransitioning>
 
 @property (assign, nonatomic, readonly) NSTimeInterval animationDuration;
-@property (assign, nonatomic, readonly) CGFloat radius;
-@property (assign, nonatomic, readonly) CGPoint center;
 @property (assign, nonatomic, readonly) SETransitionAnimatorStyle style;
-@property (strong, nonatomic, readonly) UIPercentDrivenInteractiveTransition *interactive;
 
-- (instancetype)initWithStyle:(SETransitionAnimatorStyle)style
-                       center:(CGPoint)center
-                       radius:(CGFloat)radius;
-
-+ (instancetype)roundPopAnimatorWithCenter:(CGPoint)center radius:(CGFloat)radius;
-+ (instancetype)roundPushAnimatorWithCenter:(CGPoint)center radius:(CGFloat)radius;
-+ (instancetype)replaceAnimatorWithCenter:(CGPoint)center radius:(CGFloat)radius;
-+ (instancetype)continuousPopAnimatorWithCenter:(CGPoint)center radius:(CGFloat)radius;
+- (instancetype)initWithStyle:(SETransitionAnimatorStyle)style floatingRect:(CGRect)rect;
++ (instancetype)roundPushAnimatorWithRect:(CGRect)rect;
++ (instancetype)roundPopAnimatorWithRect:(CGRect)rect;
++ (instancetype)continuousPopAnimatorWithRect:(CGRect)rect;
 
 - (void)finishContinousPopAnimation;
 - (void)cancelContinousPopAnimation;

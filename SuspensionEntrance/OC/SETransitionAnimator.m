@@ -8,37 +8,37 @@
 #import "SETransitionAnimator.h"
 
 @interface SETransitionAnimator ()
+@property (assign, nonatomic) CGRect floatingRect;
 @property (strong, nonatomic) UIView *coverView;
+@property (assign, nonatomic) CGFloat radius;
 @property (strong, nonatomic) id<UIViewControllerContextTransitioning> transitionContext;
-
 @end
 
 @implementation SETransitionAnimator
 
 #pragma mark - Life
 
-- (instancetype)initWithStyle:(SETransitionAnimatorStyle)style
-                       center:(CGPoint)center
-                       radius:(CGFloat)radius {
+- (instancetype)initWithStyle:(SETransitionAnimatorStyle)style floatingRect:(CGRect)rect {
+    
     self = [super init];
     if (self) {
-        _style  = style;
-        _radius = radius;
-        _center = center;
+        _style = style;
+        _radius = CGRectGetHeight(rect) / 2.f;
+        _floatingRect = rect;
     }
     return self;
 }
 
-+ (instancetype)roundPopAnimatorWithCenter:(CGPoint)center radius:(CGFloat)radius {
-    return [[SETransitionAnimator alloc] initWithStyle:SETransitionAnimatorStyleRoundPop center:center radius:radius];
++ (instancetype)roundPushAnimatorWithRect:(CGRect)rect {
+    return [[SETransitionAnimator alloc] initWithStyle:SETransitionAnimatorStyleRoundPush floatingRect:rect];
 }
 
-+ (instancetype)roundPushAnimatorWithCenter:(CGPoint)center radius:(CGFloat)radius {
-    return [[SETransitionAnimator alloc] initWithStyle:SETransitionAnimatorStyleRoundPush center:center radius:radius];
++ (instancetype)roundPopAnimatorWithRect:(CGRect)rect {
+    return [[SETransitionAnimator alloc] initWithStyle:SETransitionAnimatorStyleRoundPop floatingRect:rect];
 }
 
-+ (instancetype)continuousPopAnimatorWithCenter:(CGPoint)center radius:(CGFloat)radius {
-    return [[SETransitionAnimator alloc] initWithStyle:SETransitionAnimatorStyleContinuousPop center:center radius:radius];
++ (instancetype)continuousPopAnimatorWithRect:(CGRect)rect {
+    return [[SETransitionAnimator alloc] initWithStyle:SETransitionAnimatorStyleContinuousPop floatingRect:rect];
 }
 
 #pragma mark - Public
@@ -52,13 +52,10 @@
     [fromVC.view addSubview:self.coverView];
     //当前fromVC.view有偏移，需要重置
     CGFloat const currentX = fromVC.view.frame.origin.x;
-    fromVC.view.frame = CGRectMake(0, fromVC.view.frame.origin.y, fromVC.view.frame.size.width, fromVC.view.frame.size.height);
-    CGFloat endFloatX = self.center.x - self.radius;
-    CGRect floatRect = CGRectMake(endFloatX, self.center.y - self.radius, self.radius * 2, self.radius *2);
-    
-    
+    fromVC.view.frame = (CGRect) { CGPointMake(0, fromVC.view.frame.origin.y), fromVC.view.frame.size };
+
     UIBezierPath *startPath = [UIBezierPath bezierPathWithRoundedRect:CGRectMake(currentX, -self.radius, SCREEN_WIDTH + self.radius * 2, SCREEN_HEIGHT + self.radius * 2) cornerRadius:self.radius];
-    UIBezierPath *endPath = [UIBezierPath bezierPathWithRoundedRect:floatRect cornerRadius:self.radius];
+    UIBezierPath *endPath = [UIBezierPath bezierPathWithRoundedRect:self.floatingRect cornerRadius:self.radius];
     CAShapeLayer *maskLayer = [CAShapeLayer layer];
     maskLayer.path = endPath.CGPath;
     fromVC.view.layer.mask = maskLayer;
@@ -164,8 +161,7 @@
     UIView *containerView = [transitionContext containerView];
     [containerView addSubview:self.coverView];
     [containerView addSubview:toVC.view];
-    CGRect floatRect = CGRectMake(self.center.x - self.radius, self.center.y - self.radius, self.radius * 2, self.radius *2);
-    UIBezierPath *startPath = [UIBezierPath bezierPathWithRoundedRect:floatRect cornerRadius:self.radius];
+    UIBezierPath *startPath = [UIBezierPath bezierPathWithRoundedRect:self.floatingRect cornerRadius:self.radius];
     UIBezierPath *endPath = [UIBezierPath bezierPathWithRoundedRect:CGRectMake(-self.radius, -self.radius, SCREEN_WIDTH + self.radius * 2, SCREEN_HEIGHT + self.radius * 2) cornerRadius:self.radius];
     CAShapeLayer *maskLayer = [CAShapeLayer layer];
     maskLayer.path = endPath.CGPath;
@@ -193,9 +189,8 @@
     [containerView insertSubview:toVC.view atIndex:0];
 
     [toVC.view addSubview:self.coverView];
-    CGRect floatRect = CGRectMake(self.center.x - self.radius, self.center.y - self.radius, self.radius * 2, self.radius * 2);
     UIBezierPath *startPath = [UIBezierPath bezierPathWithRoundedRect:CGRectMake(-self.radius, -self.radius, SCREEN_WIDTH + self.radius * 2, SCREEN_HEIGHT + self.radius * 2) cornerRadius:self.radius];
-    UIBezierPath *endPath = [UIBezierPath bezierPathWithRoundedRect:floatRect cornerRadius:self.radius];
+    UIBezierPath *endPath = [UIBezierPath bezierPathWithRoundedRect:self.floatingRect cornerRadius:self.radius];
     CAShapeLayer *maskLayer = [CAShapeLayer layer];
     maskLayer.path = endPath.CGPath;
     fromVC.view.layer.mask = maskLayer;
@@ -209,40 +204,6 @@
     
     self.coverView.alpha = 1.0f;
     [UIView animateWithDuration:self.animationDuration animations:^{ self.coverView.alpha = 0.f; }];
-}
-
-- (void)startDefaultPushAnimation:(id<UIViewControllerContextTransitioning>)transitionContext {
-    
-    UIView *fromView = [transitionContext viewForKey:UITransitionContextFromViewKey];
-    UIView *toView = [transitionContext viewForKey:UITransitionContextToViewKey];
-    UIView *containerView = [transitionContext containerView];
-    toView.frame = CGRectMake(toView.bounds.size.width, 0, toView.bounds.size.width, toView.bounds.size.height);
-    [containerView addSubview:fromView];
-    [containerView addSubview:toView];
-    
-    [UIView animateWithDuration:self.animationDuration animations:^{
-        fromView.frame = CGRectMake(- fromView.bounds.size.width / 3.f, 0.f, fromView.bounds.size.width, fromView.bounds.size.height);
-        toView.frame = CGRectMake(0, 0, toView.bounds.size.width, toView.bounds.size.height);
-    } completion:^(BOOL finished) {
-        [transitionContext completeTransition:!transitionContext.transitionWasCancelled];
-    }];
-}
-
-- (void)startDefaultPopAnimation:(id<UIViewControllerContextTransitioning>)transitionContext {
-    
-    UIView *fromView = [transitionContext viewForKey:UITransitionContextFromViewKey];
-    UIView *toView = [transitionContext viewForKey:UITransitionContextToViewKey];
-    UIView *containerView = [transitionContext containerView];
-    toView.frame = CGRectMake(toView.bounds.size.width * -1.f / 3.f, 0, toView.bounds.size.width, toView.bounds.size.height);
-    [containerView addSubview:toView];
-    [containerView addSubview:fromView];
-
-    [UIView animateWithDuration:self.animationDuration animations:^{
-        fromView.frame = CGRectMake(fromView.bounds.size.width, 0.f, fromView.bounds.size.width, fromView.bounds.size.height);
-        toView.frame = CGRectMake(0, 0, toView.bounds.size.width, toView.bounds.size.height);
-    } completion:^(BOOL finished) {
-        [transitionContext completeTransition:!transitionContext.transitionWasCancelled];
-    }];
 }
 
 - (void)startContinousPopAnimation:(id<UIViewControllerContextTransitioning>)transitionContext {
