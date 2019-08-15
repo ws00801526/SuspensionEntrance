@@ -44,7 +44,7 @@ static NSString *const kSEItemUserInfoKey = @"userInfo";
 
 - (BOOL)se_isEntrance {
     if (!self.se_canBeEntrance) return NO;
-    return [[SuspensionEntrance shared].items containsObject:(id<SEItem>)self];
+    return [[SuspensionEntrance shared].items containsObject:(UIViewController<SEItem> *)self];
 }
 
 @end
@@ -96,6 +96,27 @@ static NSString *const kSEItemUserInfoKey = @"userInfo";
     // need to get in next main loop, otherwise self.window may be nil
     dispatch_async(dispatch_get_main_queue(), ^ { [self unarchiveEntranceItems]; });
     return self;
+}
+
+#pragma mark - Public
+
+- (BOOL)isEntranceItem:(__kindof UIViewController *)item {
+    if (![item conformsToProtocol:@protocol(SEItem)]) return NO;
+    return [self.items containsObject:(UIViewController<SEItem> *)item];
+}
+
+- (void)addEntranceItem:(__kindof UIViewController<SEItem> *)item {
+    
+    if ([self isEntranceItem:item]) return;
+    [self->_items addObject:item];
+    if (self.navigationController.viewControllers.lastObject == item)
+        [self.navigationController popViewControllerAnimated:YES];
+}
+
+- (void)cancelEntranceItem:(__kindof UIViewController<SEItem> *)item {
+    
+    if (![self isEntranceItem:item]) return;
+    [self->_items removeObject:item];
 }
 
 #pragma mark - Private

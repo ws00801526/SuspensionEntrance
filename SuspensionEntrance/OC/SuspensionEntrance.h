@@ -34,17 +34,43 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface SuspensionEntrance : NSObject
 
-/// max items can be stored. Default is 5.
+/// max items can be stored, should not over 5. Default is 5.
 @property (assign, nonatomic) NSUInteger maxCount;
 /// The path to be archived of items. Default is ~/Documents/entrance.items.
 @property (copy  , nonatomic) NSString *archivedPath;
 /// Should vibrate when the floating area is highlighted. Default is YES.
 @property (assign, nonatomic, getter=isVibratable) BOOL vibratable;
-
+/// The window where UI to be placed
 @property (weak, nonatomic, nullable) UIWindow *window;
-@property (strong, nonatomic, readonly) NSArray<id<SEItem>> *items;
+/// The entrance items
+@property (strong, nonatomic, readonly) NSArray<UIViewController<SEItem> *> *items;
 
 + (instancetype)shared;
+
+/**
+ Check item is the entrance item
+
+ @param item the item to be checked
+ @return YES or NO
+ */
+- (BOOL)isEntranceItem:(__kindof UIViewController *)item;
+
+
+/**
+ Set item to be an entrance item
+
+ @discussion Will auto pop if set succeed & navigationController.viewControllers.lastObject == item
+ @param item the item
+ */
+- (void)addEntranceItem:(__kindof UIViewController<SEItem> *)item;
+
+
+/**
+ Cancel the entrance item
+
+ @param item the item
+ */
+- (void)cancelEntranceItem:(__kindof UIViewController<SEItem> *)item;
 
 @end
 

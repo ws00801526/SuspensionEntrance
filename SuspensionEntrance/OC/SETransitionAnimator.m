@@ -103,6 +103,7 @@
 }
 
 - (void)finishContinousPopAnimationWithFastAnimating:(BOOL)fast {
+    
     CGFloat const SCREEN_WIDTH = UIScreen.mainScreen.bounds.size.width;
     UIViewController *fromVC = [self.transitionContext viewControllerForKey:UITransitionContextFromViewControllerKey];
     UIViewController *toVC = [self.transitionContext viewControllerForKey:UITransitionContextToViewControllerKey];
