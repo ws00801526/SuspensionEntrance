@@ -87,6 +87,7 @@ static const CGFloat kSEScreenHeight() { return UIScreen.mainScreen.bounds.size.
 @property (weak, nonatomic) UIImageView *imageView;
 @property (weak, nonatomic) CAShapeLayer *blackLayer;
 @property (weak, nonatomic) CAShapeLayer *whiteLayer;
+@property (assign, nonatomic, getter=isHighlighted) BOOL highlighted;
 @end
 @implementation SEFloatingBallEffectView
 @dynamic image;
@@ -94,15 +95,23 @@ static const CGFloat kSEScreenHeight() { return UIScreen.mainScreen.bounds.size.
 - (instancetype)initWithFrame:(CGRect)frame {
     self = [super initWithFrame:frame];
     if (self) {
+        
+        UIBlurEffect *effect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleLight];
+        UIVisualEffectView *effectView = [[UIVisualEffectView alloc] initWithEffect:effect];
+        effectView.frame = self.bounds;
+        effectView.alpha = 0.875f;
+        [self addSubview:effectView];
 
         UIImageView *imageView = [[UIImageView alloc] initWithFrame:self.bounds];
+        imageView.backgroundColor = [UIColor colorWithWhite:1.f alpha:0.5f];
+        imageView.contentMode = UIViewContentModeScaleAspectFill;
         imageView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
         [self addSubview:_imageView = imageView];
 
         {   // add white border
             CAShapeLayer *borderLayer = [CAShapeLayer layer];
             borderLayer.frame = self.bounds;
-            borderLayer.lineWidth = 1.5f;
+            borderLayer.lineWidth = 2.f;
             borderLayer.fillColor = [UIColor clearColor].CGColor;
             borderLayer.strokeColor = [UIColor whiteColor].CGColor;
             [self.layer addSublayer:_whiteLayer = borderLayer];
@@ -121,7 +130,14 @@ static const CGFloat kSEScreenHeight() { return UIScreen.mainScreen.bounds.size.
 }
 
 - (void)setImage:(UIImage *)image {
-    self.imageView.image = image;
+    self.imageView.backgroundColor = [UIColor colorWithWhite:1.f alpha:0.5f];
+//    self.imageView.image = image;
+}
+
+- (void)setHighlighted:(BOOL)highlighted {
+    if (_highlighted == highlighted) return;
+    _highlighted = highlighted;
+    self.imageView.backgroundColor = [UIColor colorWithWhite:highlighted ? 0.8f : 1.f alpha:0.5f];
 }
 
 - (UIImage *)image { return self.imageView.image; }
@@ -177,13 +193,13 @@ static const CGFloat kSEScreenHeight() { return UIScreen.mainScreen.bounds.size.
 - (void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
     [super touchesBegan:touches withEvent:event];
     self.layer.shadowOpacity = 1.f;
-    self.effectView.image = [UIImage imageNamed:@"blur_background_highlighted"];
+    self.effectView.highlighted = YES;
 }
 
 - (void)touchesEnded:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
     [super touchesEnded:touches withEvent:event];
     self.layer.shadowOpacity = 0.5f;
-    self.effectView.image = [UIImage imageNamed:@"blur_background"];
+    self.effectView.highlighted = NO;
     
     CGPoint point = [[touches anyObject] locationInView:self];
     point = [self.superview convertPoint:point fromView:self];
@@ -392,11 +408,10 @@ static const CGFloat kSEScreenHeight() { return UIScreen.mainScreen.bounds.size.
     }
 
     _effectView = [[SEFloatingBallEffectView alloc] initWithFrame:self.bounds];
-    _effectView.image = [UIImage imageNamed:@"blur_background"];
     _effectView.contentMode = UIViewContentModeScaleAspectFill;
     [_effectView updateMaskCorners:self.corners];
     [self addSubview:_effectView];
-
+    
     self.layer.shadowPath = [(CAShapeLayer *)_effectView.layer.mask path];
     self.layer.shadowColor = [UIColor colorWithRed:0.75f green:0.75f blue:0.75f alpha:1.0].CGColor;
     self.layer.shadowOpacity = 0.5f;
@@ -424,7 +439,7 @@ static const CGFloat kSEScreenHeight() { return UIScreen.mainScreen.bounds.size.
     
     if (pan.state == UIGestureRecognizerStateBegan) {
         // pan start, record some position
-        self.effectView.image = [UIImage imageNamed:@"blur_background_highlighted"];
+        self.effectView.highlighted = YES;
         UIBezierPath *path = [self.effectView updateMaskCorners:UIRectCornerAllCorners];
         self.layer.shadowPath = path.CGPath;
     } else if (pan.state == UIGestureRecognizerStateChanged) {
@@ -436,7 +451,7 @@ static const CGFloat kSEScreenHeight() { return UIScreen.mainScreen.bounds.size.
         [pan setTranslation:CGPointZero inView:pan.view];
     } else if (pan.state == UIGestureRecognizerStateEnded || pan.state == UIGestureRecognizerStateChanged) {
         [self showMoveBorderAnimation];
-        self.effectView.image = [UIImage imageNamed:@"blur_background"];
+        self.effectView.highlighted = NO;
     }
 }
 
@@ -445,7 +460,7 @@ static const CGFloat kSEScreenHeight() { return UIScreen.mainScreen.bounds.size.
     SEL selector = NULL;
     switch (longPress.state) {
         case UIGestureRecognizerStateBegan:
-            self.effectView.image = [UIImage imageNamed:@"blur_background_highlighted"];
+            self.effectView.highlighted = YES;
             selector = @selector(floatingBall:pressDidBegan:);
             break;
         case UIGestureRecognizerStateChanged:
@@ -453,7 +468,7 @@ static const CGFloat kSEScreenHeight() { return UIScreen.mainScreen.bounds.size.
             break;
         case UIGestureRecognizerStateEnded:
         case UIGestureRecognizerStateCancelled:
-            self.effectView.image = [UIImage imageNamed:@"blur_background"];
+            self.effectView.highlighted = NO;
             selector = @selector(floatingBall:pressDidEnded:);
             break;
         default: break;

@@ -21,7 +21,6 @@ NS_ASSUME_NONNULL_BEGIN
 @property (assign, nonatomic, readonly) NSTimeInterval animationDuration;
 @property (assign, nonatomic, readonly) SETransitionAnimatorStyle style;
 
-- (instancetype)initWithStyle:(SETransitionAnimatorStyle)style floatingRect:(CGRect)rect;
 + (instancetype)roundPushAnimatorWithRect:(CGRect)rect;
 + (instancetype)roundPopAnimatorWithRect:(CGRect)rect;
 + (instancetype)continuousPopAnimatorWithRect:(CGRect)rect;
