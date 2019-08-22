@@ -13,28 +13,67 @@
         <!--Normal View Controller-->
         <scene sceneID="tne-QT-ifu">
             <objects>
-                <viewController id="BYZ-38-t0r" customClass="NormalViewController" sceneMemberID="viewController">
+                <viewController storyboardIdentifier="NormalViewController" id="BYZ-38-t0r" customClass="NormalViewController" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="8bC-Xf-vdC">
                         <rect key="frame" x="0.0" y="0.0" width="414" height="896"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="S50-wi-yG4">
-                                <rect key="frame" x="145" y="433" width="107" height="30"/>
-                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                                <state key="normal" title="跳转到Entrance"/>
+                            <tableView clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" dataMode="prototypes" style="plain" separatorStyle="default" rowHeight="-1" estimatedRowHeight="-1" sectionHeaderHeight="28" sectionFooterHeight="28" translatesAutoresizingMaskIntoConstraints="NO" id="4Cg-fx-UbT">
+                                <rect key="frame" x="0.0" y="0.0" width="414" height="862"/>
+                                <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                <prototypes>
+                                    <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" preservesSuperviewLayoutMargins="YES" selectionStyle="default" indentationWidth="10" reuseIdentifier="cell" rowHeight="101" id="VVJ-Y3-tGO">
+                                        <rect key="frame" x="0.0" y="28" width="414" height="101"/>
+                                        <autoresizingMask key="autoresizingMask"/>
+                                        <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" preservesSuperviewLayoutMargins="YES" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="VVJ-Y3-tGO" id="Z6g-1q-9wG">
+                                            <rect key="frame" x="0.0" y="0.0" width="414" height="100.5"/>
+                                            <autoresizingMask key="autoresizingMask"/>
+                                            <subviews>
+                                                <imageView clipsSubviews="YES" userInteractionEnabled="NO" tag="100" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="N6S-Or-eLr">
+                                                    <rect key="frame" x="20" y="10" width="80.5" height="80.5"/>
+                                                    <constraints>
+                                                        <constraint firstAttribute="width" secondItem="N6S-Or-eLr" secondAttribute="height" id="hCw-aw-o9C"/>
+                                                    </constraints>
+                                                </imageView>
+                                                <label opaque="NO" userInteractionEnabled="NO" tag="99" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Label" textAlignment="natural" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="DSR-tQ-bEe">
+                                                    <rect key="frame" x="120.5" y="10" width="273.5" height="80.5"/>
+                                                    <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                                    <nil key="textColor"/>
+                                                    <nil key="highlightedColor"/>
+                                                </label>
+                                            </subviews>
+                                            <constraints>
+                                                <constraint firstItem="N6S-Or-eLr" firstAttribute="leading" secondItem="Z6g-1q-9wG" secondAttribute="leading" constant="20" id="GFn-5a-0Bb"/>
+                                                <constraint firstItem="DSR-tQ-bEe" firstAttribute="top" secondItem="N6S-Or-eLr" secondAttribute="top" id="H1m-dd-TjN"/>
+                                                <constraint firstItem="DSR-tQ-bEe" firstAttribute="leading" secondItem="N6S-Or-eLr" secondAttribute="trailing" constant="20" id="HSj-hT-c6j"/>
+                                                <constraint firstItem="DSR-tQ-bEe" firstAttribute="bottom" secondItem="N6S-Or-eLr" secondAttribute="bottom" id="Nqa-Gt-7jv"/>
+                                                <constraint firstAttribute="trailing" secondItem="DSR-tQ-bEe" secondAttribute="trailing" constant="20" id="iT8-VK-dj8"/>
+                                                <constraint firstItem="N6S-Or-eLr" firstAttribute="top" secondItem="Z6g-1q-9wG" secondAttribute="top" constant="10" id="kzc-IU-WAl"/>
+                                                <constraint firstAttribute="bottom" secondItem="N6S-Or-eLr" secondAttribute="bottom" constant="10" id="wnY-PL-47n"/>
+                                            </constraints>
+                                        </tableViewCellContentView>
+                                    </tableViewCell>
+                                </prototypes>
                                 <connections>
-                                    <segue destination="ugm-0e-90b" kind="show" id="Iuc-VO-Gjx"/>
+                                    <outlet property="dataSource" destination="BYZ-38-t0r" id="KVS-lT-TFf"/>
+                                    <outlet property="delegate" destination="BYZ-38-t0r" id="m5J-z0-9ox"/>
                                 </connections>
-                            </button>
+                            </tableView>
                         </subviews>
                         <color key="backgroundColor" red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                        <constraints>
+                            <constraint firstItem="4Cg-fx-UbT" firstAttribute="top" secondItem="8bC-Xf-vdC" secondAttribute="top" id="IKb-Fv-eAq"/>
+                            <constraint firstItem="6Tk-OE-BBY" firstAttribute="trailing" secondItem="4Cg-fx-UbT" secondAttribute="trailing" id="JTL-CO-QPr"/>
+                            <constraint firstItem="4Cg-fx-UbT" firstAttribute="leading" secondItem="6Tk-OE-BBY" secondAttribute="leading" id="LKE-Mv-Tk6"/>
+                            <constraint firstItem="6Tk-OE-BBY" firstAttribute="bottom" secondItem="4Cg-fx-UbT" secondAttribute="bottom" id="Z8g-H1-yji"/>
+                        </constraints>
                         <viewLayoutGuide key="safeArea" id="6Tk-OE-BBY"/>
                     </view>
                     <navigationItem key="navigationItem" id="Ssr-Qi-YD2"/>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="dkx-z0-nzr" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="548" y="17"/>
+            <point key="canvasLocation" x="547.82608695652175" y="16.741071428571427"/>
         </scene>
         <!--Base Navigation Controller-->
         <scene sceneID="POX-Qj-Ey1">
@@ -57,20 +96,10 @@
         <!--Entrance View Controller-->
         <scene sceneID="HOX-8H-wOt">
             <objects>
-                <viewController id="ugm-0e-90b" customClass="EntranceViewController" sceneMemberID="viewController">
+                <viewController storyboardIdentifier="EntranceViewController" id="ugm-0e-90b" customClass="EntranceViewController" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="3TR-zm-T8V">
                         <rect key="frame" x="0.0" y="0.0" width="414" height="896"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
-                        <subviews>
-                            <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Xcu-kf-80d">
-                                <rect key="frame" x="159" y="433" width="96" height="30"/>
-                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                                <state key="normal" title="跳转到Normal"/>
-                                <connections>
-                                    <segue destination="BYZ-38-t0r" kind="show" id="va6-96-URc"/>
-                                </connections>
-                            </button>
-                        </subviews>
                         <color key="backgroundColor" red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                         <viewLayoutGuide key="safeArea" id="hU9-4L-hlI"/>
                     </view>
@@ -78,10 +107,7 @@
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="j0Y-VE-Wt3" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="1300" y="17"/>
+            <point key="canvasLocation" x="1298.5507246376812" y="16.741071428571427"/>
         </scene>
     </scenes>
-    <inferredMetricsTieBreakers>
-        <segue reference="va6-96-URc"/>
-    </inferredMetricsTieBreakers>
 </document>

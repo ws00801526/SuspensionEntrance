@@ -6,12 +6,16 @@
 //  @class      EntranceViewController
 
 #import "EntranceViewController.h"
+#import "NormalViewController.h"
+
+#import <WebKit/WebKit.h>
 
 @interface EntranceViewController ()
-
+@property (strong, nonatomic) WKWebView *webView;
 @end
 
 @implementation EntranceViewController
+@dynamic view;
 
 + (instancetype)entranceWithItem:(id<SEItem>)item {
     EntranceViewController *controller = [[EntranceViewController alloc] initWithNibName:nil bundle:nil];
@@ -21,21 +25,25 @@
     return controller;
 }
 
+
 - (void)viewDidLoad {
     [super viewDidLoad];
-    self.view.backgroundColor = [UIColor purpleColor];
+
+    self.webView = [[WKWebView alloc] initWithFrame:self.view.bounds];
+    [self.view addSubview:self.webView];
+    NSURL *url = [NSURL URLWithString:[self.entranceUserInfo objectForKey:@"url"]];
+    if (url) [self.webView loadRequest:[NSURLRequest requestWithURL:url]];
     
-    if (self.entranceTitle.length <= 0) {
-        NSArray *titles = @[
-                            @"我是测试标题一",
-                            @"我是测试标题二, 但是我的标题很长很长很长很长很长很长很长很长很长很长很长很长很长很长很长很长",
-                            @"百度的测试界面",
-                            @"优酷测试界面",
-                            @"Google一下,世界更精彩",
-                            ];
-        
-        self.entranceTitle = [titles objectAtIndex:arc4random() % 5];
-    }
+    UIBarButtonItem *next = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemPlay target:self action:@selector(pushNormalController)];
+    self.navigationItem.rightBarButtonItem = next;
+}
+
+- (void)pushNormalController {
+    
+    UIStoryboard *storyboard = self.storyboard;
+    if (!storyboard) storyboard = [UIStoryboard storyboardWithName:@"Main" bundle:nil];
+    NormalViewController *controller = (NormalViewController *)[storyboard instantiateViewControllerWithIdentifier:@"NormalViewController"];
+    [self.navigationController pushViewController:controller animated:YES];
 }
 
 - (void)dealloc {
@@ -45,5 +53,6 @@
     NSLog(@"self.gestures :%@", self.view.gestureRecognizers);
 #endif
 }
+
 
 @end
