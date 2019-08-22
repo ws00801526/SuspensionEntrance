@@ -176,7 +176,8 @@ BOOL kSEFloatAreaContainsPoint(CGPoint point) {
     if (highlighted) [self vibrateIfNeeded];
     
     // update outer layer transform
-    self.outerLayer.affineTransform = CGAffineTransformMakeScale(highlighted ? 1.f : self.multiple, highlighted ? 1.f : self.multiple);
+    CGFloat scale = 1.f * (highlighted ? 1.f : self.multiple);
+    self.outerLayer.affineTransform = CGAffineTransformMakeScale(scale, scale);
     
     // update mask
     [self setupMaskLayer];

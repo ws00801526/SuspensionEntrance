@@ -21,11 +21,13 @@ NS_ASSUME_NONNULL_BEGIN
 
 @end
 
-@interface SEFloatingBall : UIVisualEffectView
+@protocol SEItem;
+@interface SEFloatingBall : UIView
 
 @property (assign, nonatomic, readonly) CGRect floatingRect;
 @property (weak, nonatomic, nullable) id<SEFloatingBallDelegate> delegate;
 
+- (void)reloadIconViews:(NSArray<id<SEItem>> *)items;
 @end
 
 NS_ASSUME_NONNULL_END

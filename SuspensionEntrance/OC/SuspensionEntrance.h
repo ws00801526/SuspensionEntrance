@@ -9,6 +9,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+
 @protocol SEItem <NSObject>
 
 @required
@@ -32,12 +33,16 @@ NS_ASSUME_NONNULL_BEGIN
 
 @end
 
+typedef void(^SEItemIconHandler)(UIImageView *iconView, id<SEItem> item);
+
 @interface SuspensionEntrance : NSObject
 
 /// max items can be stored, should not over 5. Default is 5.
 @property (assign, nonatomic) NSUInteger maxCount;
 /// The path to be archived of items. Default is ~/Documents/entrance.items.
 @property (copy  , nonatomic) NSString *archivedPath;
+/// then handler to get correct icon of item.
+@property (copy  , nonatomic) SEItemIconHandler iconHandler;
 /// Should vibrate when the floating area is highlighted. Default is YES.
 @property (assign, nonatomic, getter=isVibratable) BOOL vibratable;
 /// The window where UI to be placed

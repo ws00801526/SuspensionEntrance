@@ -28,17 +28,20 @@ static NSString *const kSEItemUserInfoKey = @"userInfo";
 @property (strong, nonatomic) UIPercentDrivenInteractiveTransition *interactive;
 
 @property (strong, nonatomic, readwrite) NSMutableArray<UIViewController<SEItem> *> *items;
-
+@property (strong, nonatomic, readonly)  NSArray<UIViewController<SEItem> *> *unusedItems;
 @property (strong, nonatomic, readonly)  UINavigationController *navigationController;
 
 @end
 
 @interface UIViewController (SEPrivate)
+@property (assign, nonatomic, readonly) BOOL se_isUsed;
 @property (assign, nonatomic, readonly) BOOL se_isEntrance;
 @property (assign, nonatomic, readonly) BOOL se_canBeEntrance;
 @end
 
 @implementation UIViewController (SEPrivate)
+
+- (BOOL)se_isUsed { return self.navigationController != nil; }
 
 - (BOOL)se_canBeEntrance { return [self conformsToProtocol:@protocol(SEItem)]; }
 
@@ -70,6 +73,33 @@ static NSString *const kSEItemUserInfoKey = @"userInfo";
 
 @end
 
+#import <objc/runtime.h>
+static NSString *const kSEItemIconTask;
+
+@implementation UIImageView (SEPrivate)
+
+- (void)se_setImageWithItem:(id<SEItem>)item {
+    
+    NSURLSessionDataTask *task = objc_getAssociatedObject(self, &kSEItemIconTask);
+    if (task && [task.originalRequest.URL isEqual:item.entranceIconUrl]) { return; }
+    if (task) [task cancel];
+    
+    __weak typeof(self) wSelf = self;
+    task = [[NSURLSession sharedSession] dataTaskWithURL:item.entranceIconUrl completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
+        if (!data) return;
+        UIImage *image = [UIImage imageWithData:data scale:2.f];
+        if (!image) return;
+        dispatch_async(dispatch_get_main_queue(), ^{
+            __strong typeof(wSelf) self = wSelf;
+            self.image = image;
+        });
+    }];
+    [task resume];
+    objc_setAssociatedObject(self, &kSEItemIconTask, task, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+}
+
+@end
+
 @implementation SuspensionEntrance
 
 #pragma mark - Life
@@ -85,14 +115,23 @@ static NSString *const kSEItemUserInfoKey = @"userInfo";
         _items = [NSMutableArray array];
         _archivedPath = [[NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) firstObject] stringByAppendingPathComponent:@"entrance.items"];
 
-        _floatingBall = [[SEFloatingBall alloc] initWithEffect:[UIBlurEffect effectWithStyle:UIBlurEffectStyleLight]];
+        _floatingBall = [[SEFloatingBall alloc] initWithFrame:CGRectZero];
         _floatingBall.delegate = (id<SEFloatingBallDelegate>)self;
         
         _floatingArea = [[SEFloatingArea alloc] initWithFrame:CGRectZero];
         
         _floatingList = [[SEFloatingList alloc] initWithFrame:CGRectZero];
         _floatingList.delegate = (id<SEFloatingListDelegate>)self;
+        
+        _iconHandler = ^(UIImageView *iconView, id<SEItem> item) {
+            [iconView se_setImageWithItem:item];
+        };
+        
+        // register keyboard notification to hide floating ball
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleKeyboardWillShow:) name:UIKeyboardWillShowNotification object:nil];
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleKeyboardWillHide:) name:UIKeyboardWillHideNotification object:nil];
     }
+
     // need to get in next main loop, otherwise self.window may be nil
     dispatch_async(dispatch_get_main_queue(), ^ { [self unarchiveEntranceItems]; });
     return self;
@@ -194,8 +233,23 @@ static NSString *const kSEItemUserInfoKey = @"userInfo";
     }
     
     [self.floatingList reloadData];
+    [self.floatingBall reloadIconViews:self.items];
     if (self.items.count <= 0) { [self.floatingBall removeFromSuperview]; }
     else if (!self.floatingBall.superview) { [self.window addSubview:self.floatingBall]; }
+}
+
+- (void)handleKeyboardWillShow:(NSNotification *)note {
+    
+    BOOL visible = self.floatingBall.superview && self.floatingBall.alpha >= 1.f;
+    if (!visible) return;
+    [UIView animateWithDuration:.25f animations:^ { self.floatingBall.alpha = .0f; }];
+}
+
+- (void)handleKeyboardWillHide:(NSNotification *)note {
+    
+    BOOL visible = self.floatingBall.superview && self.unusedItems.count >= 1;
+    if (!visible) return;
+    [UIView animateWithDuration:.25f animations:^ { self.floatingBall.alpha = 1.0f; }];
 }
 
 #pragma mark - Actions
@@ -231,6 +285,8 @@ static NSString *const kSEItemUserInfoKey = @"userInfo";
             
             [self.animator updateContinousPopAnimationPercent:tPoint.x / SCREEN_WIDTH];
             [self.interactive updateInteractiveTransition:tPoint.x / SCREEN_WIDTH];
+            
+            if (self.floatingBall.alpha < 1.f && self.items.count >= 1) self.floatingBall.alpha = tPoint.x / SCREEN_WIDTH;
         }
             break;
         case UIGestureRecognizerStateEnded:     // fall through
@@ -251,6 +307,7 @@ static NSString *const kSEItemUserInfoKey = @"userInfo";
                         [self.animator finishContinousPopAnimation];
                         [self.interactive finishInteractiveTransition];
                         [self.floatingList reloadData];
+                        [self.floatingBall reloadIconViews:self.items];
                     } else {
                         // floating is full
                         [self.animator cancelContinousPopAnimation];
@@ -272,8 +329,9 @@ static NSString *const kSEItemUserInfoKey = @"userInfo";
                 [self.animator cancelContinousPopAnimation];
                 [self.interactive cancelInteractiveTransition];
             }
-            [self.floatingArea removeFromSuperview];
             self.interactive = nil;
+            [self.floatingArea removeFromSuperview];
+            [UIView animateWithDuration:.25 animations:^{ self.floatingBall.alpha = (self.items.count >= 1) ? 1.f : .0f; }];
         }
             break;
         default: break;
@@ -331,16 +389,14 @@ static NSString *const kSEItemUserInfoKey = @"userInfo";
 }
 
 - (BOOL)floatingList:(SEFloatingList *)list willDeleteItem:(id<SEItem>)item {
-    if (![self.items containsObject:item]) return NO;
+    if (![self.items containsObject:(UIViewController<SEItem> *)item]) return NO;
     [self->_items removeObject:(UIViewController<SEItem> *)item];
     [self archiveEntranceItems];
     return YES;
 }
 
-- (BOOL)floatingList:(SEFloatingList *)list itemVisible:(id<SEItem>)item {
-    
-    if (!self.navigationController.viewControllers.lastObject.se_isEntrance) return YES;
-    return self.navigationController.viewControllers.lastObject != item;
+- (BOOL)floatingList:(SEFloatingList *)list isItemVisible:(id<SEItem>)item {
+    return !((UIViewController<SEItem> *)item).se_isUsed;
 }
 
 - (void)floatingListWillShow:(SEFloatingList *)list {
@@ -348,7 +404,18 @@ static NSString *const kSEItemUserInfoKey = @"userInfo";
 }
 
 - (void)floatingListWillHide:(SEFloatingList *)list {
-    [UIView animateWithDuration:0.25 animations:^{ self.floatingBall.alpha = 1.0f; }];
+    
+    NSArray<UIViewController<SEItem> *> *unusedItems = self.unusedItems;
+    [self.floatingBall reloadIconViews:unusedItems];
+
+    CGFloat alpha = unusedItems.count >= 1 ? 1.f : self.floatingBall.alpha;
+    [UIView animateWithDuration:0.25 animations:^{ self.floatingBall.alpha = alpha; }];
+}
+
+#pragma mark - Setter
+
+- (void)setMaxCount:(NSUInteger)maxCount {
+    _maxCount = MAX(1, MIN(5, maxCount));
 }
 
 #pragma mark - Getter
@@ -376,6 +443,10 @@ static NSString *const kSEItemUserInfoKey = @"userInfo";
     return nil;
 }
 
+- (NSArray<UIViewController<SEItem> *> *)unusedItems {
+    return [self.items filteredArrayUsingPredicate:[NSPredicate predicateWithFormat:@"SELF.se_isUsed = NO"]];
+}
+
 #pragma mark - Class
 
 + (instancetype)shared {
@@ -395,10 +466,9 @@ static NSString *const kSEItemUserInfoKey = @"userInfo";
 
 - (void)navigationController:(UINavigationController *)navigationController didShowViewController:(UIViewController *)viewController animated:(BOOL)animated {
     
-    NSLog(@"did show controller :%@", viewController);
-    
     self.animator = nil;
     self.interactive = nil;
+    [self.floatingBall reloadIconViews:self.unusedItems];
     
     if (navigationController.viewControllers.count <= 1) return;
     
@@ -427,8 +497,10 @@ static NSString *const kSEItemUserInfoKey = @"userInfo";
         } else if (fromVC.se_isEntrance) {
             CGRect const floatingRect = [self floatingRectOfOperation:operation];
             self.animator = [SETransitionAnimator roundPopAnimatorWithRect:floatingRect];
+            [UIView animateWithDuration:.25 animations:^{ self.floatingBall.alpha = (self.items.count >= 1) ? 1.f : .0f; }];
         } else {
             self.animator = nil;
+            [UIView animateWithDuration:.25 animations:^{ self.floatingBall.alpha = (self.items.count >= 1) ? 1.f : .0f; }];
         }
     } else if (operation == UINavigationControllerOperationPush) {
         if ((toVC.se_isEntrance && fromVC.se_isEntrance) || (toVC.se_isEntrance && !fromVC.se_isEntrance)) {
@@ -437,6 +509,10 @@ static NSString *const kSEItemUserInfoKey = @"userInfo";
         } else {
             self.animator = nil;
         }
+        
+        NSArray<UIViewController<SEItem> *> *unusedItems = self.unusedItems;
+        if (unusedItems.count <= 0) self.floatingBall.alpha = .0f;
+        [self.floatingBall reloadIconViews:unusedItems];
     }
     return self.animator;
 }

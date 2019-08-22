@@ -8,9 +8,7 @@
 #import "SEFloatingList.h"
 #import "SuspensionEntrance.h"
 
-
 static CGFloat const kSEFloatingListItemHeight = 60.f;
-static CGFloat const kSEFloatingListItemPadding = 15.f;
 
 @interface SEFloatingListItem ()
 
@@ -27,6 +25,7 @@ static CGFloat const kSEFloatingListItemPadding = 15.f;
 
 @interface SEFloatingList ()
 @property (weak, nonatomic) SEFloatingListItem *tempItem;
+@property (strong, nonatomic) NSMutableArray<SEFloatingListItem *> *visibleItems;
 @end
 
 @implementation SEFloatingListItem
@@ -45,7 +44,6 @@ static CGFloat const kSEFloatingListItemPadding = 15.f;
         UIImageView *iconView = [[UIImageView alloc] initWithFrame:CGRectMake(0, 0, 35.f, 35.f)];
         iconView.center = CGPointMake(padding + 35.f / 2.f, kSEFloatingListItemHeight / 2.f);
         iconView.contentMode = UIViewContentModeScaleAspectFill;
-        iconView.backgroundColor = [UIColor lightGrayColor];
         CAShapeLayer *maskLayer = [CAShapeLayer layer];
         maskLayer.path = [UIBezierPath bezierPathWithRoundedRect:iconView.bounds cornerRadius:17.5f].CGPath;
         iconView.layer.mask = maskLayer;
@@ -65,7 +63,7 @@ static CGFloat const kSEFloatingListItemPadding = 15.f;
         [deleteButton setTitleColor:[UIColor blackColor] forState:UIControlStateNormal];
         [self addSubview:_deleteButton = deleteButton];
 
-        self.layer.shadowColor = [UIColor colorWithRed:0.5f green:0.5f blue:0.5f alpha:1.0].CGColor;
+        self.layer.shadowColor = [UIColor colorWithRed:0.75f green:0.75f blue:0.75f alpha:1.0].CGColor;
         self.layer.shadowOpacity = 1.f;
         self.layer.shadowOffset = CGSizeZero;
         self.layer.shadowRadius = 7.5f;
@@ -74,6 +72,8 @@ static CGFloat const kSEFloatingListItemPadding = 15.f;
         _backgroundLayer.fillColor = [UIColor whiteColor].CGColor;
         _backgroundLayer.frame = self.bounds;
         [self.layer insertSublayer:self.backgroundLayer atIndex:0];
+        
+        [SuspensionEntrance shared].iconHandler(iconView, item);
     }
     return self;
 }
@@ -136,6 +136,8 @@ static CGFloat const kSEFloatingListItemPadding = 15.f;
     return self;
 }
 
+#pragma mark - Override
+
 - (void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
 
     [super touchesBegan:touches withEvent:event];
@@ -152,12 +154,14 @@ static CGFloat const kSEFloatingListItemPadding = 15.f;
 - (void)touchesEnded:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
     
     [super touchesEnded:touches withEvent:event];
+    BOOL animated = YES;
     if (self.tempItem.highlighted) {
         if (self.delegate && [self.delegate respondsToSelector:@selector(floatingList:didSelectItem:)]) {
+            animated = NO;
             [self.delegate floatingList:self didSelectItem:self.tempItem.item];
         }
     }
-    [self dismissWithAnimated:YES];
+    [self dismissWithAnimated:animated];
 }
 
 - (void)touchesMoved:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
@@ -197,40 +201,38 @@ static CGFloat const kSEFloatingListItemPadding = 15.f;
     CGFloat const SCREEN_WIDTH = UIScreen.mainScreen.bounds.size.width;
     CGFloat const SCREEN_HEIGHT = UIScreen.mainScreen.bounds.size.height - safeAreaInsets.top - safeAreaInsets.bottom;
     
+    NSArray<SEFloatingListItem *> *visibleListItems = [self.visibleItems copy];
     
-    NSMutableArray<SEFloatingListItem *> *subviews = [self.listItems mutableCopy];
-    
-    if (self.delegate && [self.delegate respondsToSelector:@selector(floatingList:itemVisible:)]) {
-        for (SEFloatingListItem *listItem in self.listItems) {
-            BOOL visible = [self.delegate floatingList:self itemVisible:listItem.item];
-            if (!visible) [subviews removeObject:listItem];
-        }
-    }
-    
-    CGFloat const itemHeight = (kSEFloatingListItemPadding + kSEFloatingListItemHeight);
-    CGFloat height = subviews.count * itemHeight - kSEFloatingListItemPadding;
+    CGFloat const padding = 15.f;
+    CGFloat const itemHeight = (padding + kSEFloatingListItemHeight);
+    CGFloat height = visibleListItems.count * itemHeight;
     BOOL inLeft = rect.origin.x <= (SCREEN_WIDTH / 2.f);
     BOOL inBottom = (rect.origin.y + height < SCREEN_HEIGHT);
-    BOOL isEnough = inBottom ? ( rect.origin.y + height + safeAreaInsets.bottom < SCREEN_HEIGHT ) : (rect.origin.y > (height + safeAreaInsets.top));
+    BOOL isEnough = inBottom ? ( CGRectGetMaxY(rect) + height + safeAreaInsets.bottom < SCREEN_HEIGHT ) : (rect.origin.y > (height + safeAreaInsets.top));
     
     CGFloat x = inLeft ? 0.f : (SCREEN_WIDTH / 3.f);
-    CGFloat y = inBottom ? (rect.origin.y + rect.size.height + kSEFloatingListItemPadding) : (rect.origin.y - itemHeight);
+    CGFloat y = inBottom ? (rect.origin.y + rect.size.height + padding) : (rect.origin.y - itemHeight);
     if (!isEnough) { y = inBottom ? SCREEN_HEIGHT + safeAreaInsets.top - kSEFloatingListItemHeight - 5.f : safeAreaInsets.top; }
     
-    if (!isEnough) subviews = [[[subviews reverseObjectEnumerator] allObjects] mutableCopy];
+    if (!isEnough) visibleListItems = [[[visibleListItems reverseObjectEnumerator] allObjects] mutableCopy];
     
-    for (SEFloatingListItem *itemView in subviews) {
-        NSUInteger const idx = [self.listItems indexOfObject:itemView];
+    NSUInteger idx = 0;
+    for (SEFloatingListItem *itemView in self.listItems) {
+
         itemView.alpha = .0f;
         itemView.selected = NO;
         itemView.highlighted = NO;
         itemView.frame = (CGRect) { CGPointMake(inLeft ? -itemView.frame.size.width : SCREEN_WIDTH, y), itemView.frame.size };
         itemView.corners = inLeft ? (UIRectCornerTopRight | UIRectCornerBottomRight) : (UIRectCornerTopLeft | UIRectCornerBottomLeft);
+        
+        if (![visibleListItems containsObject:itemView]) continue;
+        
         [UIView animateWithDuration:0.15 delay:idx * 0.01 options:UIViewAnimationOptionCurveEaseInOut animations:^{
             itemView.alpha = 1.0f;
             itemView.frame = (CGRect){ CGPointMake(x, y), itemView.frame.size };
         } completion:NULL];
         
+        idx += 1;
         if (((inBottom && isEnough) || (!inBottom && !isEnough))) { y += itemHeight; }
         else { y-= itemHeight; }
     }
@@ -246,21 +248,35 @@ static CGFloat const kSEFloatingListItemPadding = 15.f;
     
     CGFloat const SCREEN_WIDTH = UIScreen.mainScreen.bounds.size.width;
 
-    for (SEFloatingListItem *itemView in self.listItems) {
-        NSUInteger const idx = [self.listItems indexOfObject:itemView];
+    NSArray<SEFloatingListItem *> *visibleItems = self.visibleItems;
+    for (SEFloatingListItem *itemView in visibleItems) {
+        NSUInteger const idx = [visibleItems indexOfObject:itemView];
         BOOL inLeft = (itemView.frame.origin.x <= 0.f);
         CGFloat const x = ((inLeft ? itemView.frame.size.width : SCREEN_WIDTH) + 30.f) * (inLeft ? -1.f : 1.f);
-        [UIView animateWithDuration:0.15f delay:idx * 0.05 options:UIViewAnimationOptionCurveEaseInOut animations:^{
+        [UIView animateWithDuration:animated ? .15f : CGFLOAT_MIN delay:idx * 0.05 options:UIViewAnimationOptionCurveEaseInOut animations:^{
             itemView.frame = (CGRect){ CGPointMake(x, itemView.frame.origin.y), itemView.frame.size };
         } completion:NULL];
     }
 
-    [UIView animateWithDuration:0.25 animations:^ { self.alpha = 0.f; } completion:^(BOOL finished) {
+    [UIView animateWithDuration:animated ? .25f : CGFLOAT_MIN animations:^ { self.alpha = 0.f; } completion:^(BOOL finished) {
         [self removeFromSuperview];
     }];
     
     if (self.delegate && [self.delegate respondsToSelector:@selector(floatingListWillHide:)])
         [self.delegate floatingListWillHide:self];
+}
+
+#pragma mark - Private
+
+- (NSArray<SEFloatingListItem *> *)visibleItems {
+    
+    NSMutableArray<SEFloatingListItem *> *listItems = [self.listItems mutableCopy];
+    if (self.delegate && [self.delegate respondsToSelector:@selector(floatingList:isItemVisible:)]) {
+        for (SEFloatingListItem *listItem in self.listItems) {
+            if (![self.delegate floatingList:self isItemVisible:listItem.item]) { [listItems removeObject:listItem]; }
+        }
+    }
+    return [listItems copy];
 }
 
 #pragma mark - Actions
@@ -287,14 +303,14 @@ static CGFloat const kSEFloatingListItemPadding = 15.f;
         [listItem removeFromSuperview];
     }];
 
-    if (self.listItems.count <= 1) {
+    if (self.visibleItems.count <= 1) {
         [self dismissWithAnimated:YES];
         return;
     }
     
-    NSUInteger const currendIdx = [self.listItems indexOfObject:listItem];
-    for (SEFloatingListItem *tempItem in self.listItems) {
-        NSUInteger const idx = [self.listItems indexOfObject:tempItem];
+    NSUInteger const currendIdx = [self.visibleItems indexOfObject:listItem];
+    for (SEFloatingListItem *tempItem in self.visibleItems) {
+        NSUInteger const idx = [self.visibleItems indexOfObject:tempItem];
         if (idx <= currendIdx) { continue; }
         CGRect const tempRect = tempItem.frame;
         [UIView animateWithDuration:0.15f animations:^{
