@@ -190,7 +190,7 @@ static NSString *const kSEItemIconTask;
 
 - (void)showItemsFullAlert {
     
-    NSString *message = [NSString stringWithFormat:@"最多设置%ld个浮窗", self.maxCount];
+    NSString *message = [NSString stringWithFormat:@"最多设置%d个浮窗", (int)self.maxCount];
     UIAlertController *alert = [UIAlertController alertControllerWithTitle:nil message:message preferredStyle:UIAlertControllerStyleAlert];
     UIAlertAction *confirm = [UIAlertAction actionWithTitle:@"确定" style:UIAlertActionStyleDefault handler:NULL];
     [alert addAction:confirm];
@@ -209,9 +209,11 @@ static NSString *const kSEItemIconTask;
                            }];
     }
     
-    BOOL succ = [NSKeyedArchiver archiveRootObject:infos toFile:self.archivedPath];
 #if DEBUG
+    BOOL succ = [NSKeyedArchiver archiveRootObject:infos toFile:self.archivedPath];
     if (!succ) { NSLog(@"archive entrance items failed :%@", self.archivedPath); }
+#else
+    [NSKeyedArchiver archiveRootObject:infos toFile:self.archivedPath];
 #endif
 }
 
