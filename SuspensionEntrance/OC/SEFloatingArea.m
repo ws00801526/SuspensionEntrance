@@ -191,7 +191,7 @@ BOOL kSEFloatAreaContainsPoint(CGPoint point) {
     self.titleLabel.textColor = color;
     self.innerLayer.borderColor = self.outerLayer.borderColor = color.CGColor;
     self.effect = enabled ? [UIBlurEffect effectWithStyle:UIBlurEffectStyleDark] : nil;
-    self.backgroundColor = enabled ? [UIColor clearColor] : [UIColor colorWithWhite:1.f alpha:0.8f];
+    self.backgroundColor = enabled ? [UIColor clearColor] : [UIColor colorWithWhite:0.875f alpha:1.f];
 }
 
 #pragma mark - Getter

@@ -83,8 +83,9 @@ static NSString *const kSEItemIconTask;
     NSURLSessionDataTask *task = objc_getAssociatedObject(self, &kSEItemIconTask);
     if (task && [task.originalRequest.URL isEqual:item.entranceIconUrl]) { return; }
     if (task) [task cancel];
-    
+
     __weak typeof(self) wSelf = self;
+    self.backgroundColor = [UIColor colorWithWhite:0.90f alpha:1.f];
     task = [[NSURLSession sharedSession] dataTaskWithURL:item.entranceIconUrl completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
         if (!data) return;
         UIImage *image = [UIImage imageWithData:data scale:2.f];
@@ -92,6 +93,7 @@ static NSString *const kSEItemIconTask;
         dispatch_async(dispatch_get_main_queue(), ^{
             __strong typeof(wSelf) self = wSelf;
             self.image = image;
+            self.backgroundColor = [UIColor colorWithWhite:0.90f alpha:1.f];
         });
     }];
     [task resume];

@@ -10,16 +10,8 @@
 
 static NSString * const kSEFloatingBallFrameKey = @"com.fraker.xm.se.ball.frame";
 
-static const CGFloat kSEFloatingBallRadius() {
-    // XR,Plus = 70.f others = 60.f
-    return UIScreen.mainScreen.scale == 3 ? 35.f : 30.f;
-}
-
-static const CGFloat kSEFloatingBallPadding() {
-    // XR,Plus = 9.f others = 6.f
-    return UIScreen.mainScreen.scale * 3.f;
-}
-
+static const CGFloat kSEFloatingBallRadius = 30.f;
+static const CGFloat kSEFloatingBallPadding = 9.f;
 static const CGFloat kSEScreenWidth() { return UIScreen.mainScreen.bounds.size.width; }
 static const CGFloat kSEScreenHeight() { return UIScreen.mainScreen.bounds.size.height; }
 
@@ -54,7 +46,7 @@ static const CGFloat kSEScreenHeight() { return UIScreen.mainScreen.bounds.size.
 #pragma mark - Private
 
 - (void)updateMaskWithAngle:(CGFloat)angle isRound:(BOOL)isRound {
-    
+
     CAShapeLayer *maskLayer = [CAShapeLayer layer];
     maskLayer.frame = self.bounds;
     maskLayer.path = [self maskPathWithRound:isRound].CGPath;
@@ -75,7 +67,7 @@ static const CGFloat kSEScreenHeight() { return UIScreen.mainScreen.bounds.size.
     CGPoint centerB = CGPointMake(centerA.x + value, centerA.y + value);
     UIBezierPath *path = [UIBezierPath bezierPath];
     [path addArcWithCenter:centerA radius:radius startAngle:startAngle endAngle:endAngle clockwise:YES];
-    [path addQuadCurveToPoint:centerB controlPoint:centerA];
+    [path addQuadCurveToPoint:centerB controlPoint:CGPointMake(centerA.x * 5 / 4.f, centerA.y)];
     [path closePath];
     return path;
 }
@@ -83,14 +75,12 @@ static const CGFloat kSEScreenHeight() { return UIScreen.mainScreen.bounds.size.
 @end
 
 @interface SEFloatingBallEffectView : UIView
-@property (strong, nonatomic) UIImage *image;
 @property (weak, nonatomic) UIImageView *imageView;
 @property (weak, nonatomic) CAShapeLayer *blackLayer;
 @property (weak, nonatomic) CAShapeLayer *whiteLayer;
 @property (assign, nonatomic, getter=isHighlighted) BOOL highlighted;
 @end
 @implementation SEFloatingBallEffectView
-@dynamic image;
 
 - (instancetype)initWithFrame:(CGRect)frame {
     self = [super initWithFrame:frame];
@@ -129,18 +119,11 @@ static const CGFloat kSEScreenHeight() { return UIScreen.mainScreen.bounds.size.
     return self;
 }
 
-- (void)setImage:(UIImage *)image {
-    self.imageView.backgroundColor = [UIColor colorWithWhite:1.f alpha:0.5f];
-//    self.imageView.image = image;
-}
-
 - (void)setHighlighted:(BOOL)highlighted {
     if (_highlighted == highlighted) return;
     _highlighted = highlighted;
     self.imageView.backgroundColor = [UIColor colorWithWhite:highlighted ? 0.8f : 1.f alpha:0.5f];
 }
-
-- (UIImage *)image { return self.imageView.image; }
 
 - (UIBezierPath *)updateMaskCorners:(UIRectCorner)corners {
     
@@ -179,7 +162,7 @@ static const CGFloat kSEScreenHeight() { return UIScreen.mainScreen.bounds.size.
     self = [super initWithFrame:frame];
     if (self) {
         
-        _radius = kSEFloatingBallRadius();
+        _radius = kSEFloatingBallRadius;
         _iconViews = [NSMutableArray array];
         
         [self setupUI];
@@ -217,6 +200,7 @@ static const CGFloat kSEScreenHeight() { return UIScreen.mainScreen.bounds.size.
 
 - (void)reloadIconViews:(NSArray<id<SEItem>> *)items {
     
+    
     if (self.iconViews.count < items.count) {
         for (NSUInteger i = self.iconViews.count; i < items.count; i ++) {
             SEFloatingBallItem *imageView = [[SEFloatingBallItem alloc] init];
@@ -236,8 +220,7 @@ static const CGFloat kSEScreenHeight() { return UIScreen.mainScreen.bounds.size.
 
     [self.iconViews enumerateObjectsUsingBlock:^(SEFloatingBallItem * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
         
-        CGRect origin = obj.frame;
-        
+        CGRect const origin = obj.frame;
         NSDictionary *info = [frames objectAtIndex:idx];
         obj.transform = CGAffineTransformIdentity;
         obj.frame = CGRectFromString([info objectForKey:@"frame"]);
@@ -245,14 +228,13 @@ static const CGFloat kSEScreenHeight() { return UIScreen.mainScreen.bounds.size.
         BOOL isRound = ![[info objectForKey:@"mask"] boolValue];
         CGFloat angle = [[info objectForKey:@"angle"] intValue] * M_PI / 180.f;
         [obj updateMaskWithAngle:angle isRound:isRound];
-        obj.backgroundColor = [UIColor colorWithRed:(arc4random() % 255) / 255.f green:(arc4random() % 255) / 255.f blue:(arc4random() % 255) / 255.f alpha:1.f];
-
+        
         CABasicAnimation *position = [CABasicAnimation animationWithKeyPath:@"position"];
         position.fromValue = @(CGPointMake(CGRectGetMidX(origin), CGRectGetMidY(origin)));
         position.toValue = @(CGPointMake(CGRectGetMidX(obj.frame), CGRectGetMidY(obj.frame)));
         position.duration = .25f;
         [obj.layer addAnimation:position forKey:@"position"];
-        
+
         [SuspensionEntrance shared].iconHandler(obj, [items objectAtIndex:idx]);
     }];
 }
@@ -280,39 +262,43 @@ static const CGFloat kSEScreenHeight() { return UIScreen.mainScreen.bounds.size.
 
 - (NSArray<NSDictionary *> *)twoWithMaxWidth:(CGFloat const)maxWidth center:(CGPoint)center {
     
-    CGFloat const width = (maxWidth + 4.f) / 2.f;
+    // the padding between each ball item
+    CGFloat const half = 2.f;
+    CGFloat const width = maxWidth / 2.f + half;
     CGRect const frame = CGRectMake(0, 0, width, width);
     return @[
              @{
-                 @"center" : NSStringFromCGPoint(CGPointMake(center.x - width / 2.f + 2.f, center.y)),
+                 @"center" : NSStringFromCGPoint(CGPointMake(center.x - width / 2.f + half, center.y)),
                  @"frame" : NSStringFromCGRect(frame),
                  @"mask" : @YES
                  },
              @{
                  @"frame" : NSStringFromCGRect(frame),
-                 @"center" : NSStringFromCGPoint(CGPointMake(center.x + width / 2.f - 2.f, center.y)),
+                 @"center" : NSStringFromCGPoint(CGPointMake(center.x + width / 2.f - half, center.y)),
                 }
              ];
 }
 
 - (NSArray<NSDictionary *> *)threeWithMaxWidth:(CGFloat const)maxWidth center:(CGPoint)center {
     
+    // the padding between each ball item
+    CGFloat const half = 3.f;
     CGFloat const width = maxWidth / 2.f;
     CGRect const frame = CGRectMake(0, 0, width, width);
     return @[
              @{
-                 @"center" : NSStringFromCGPoint(CGPointMake(center.x - width / 2.f + 2.f, center.y + width / 3.f)),
+                 @"center" : NSStringFromCGPoint(CGPointMake(center.x - width / 2.f + half / 2.f, center.y + width / 2.f  - half)),
                  @"frame" : NSStringFromCGRect(frame),
                  @"mask" : @YES
                  },
              @{
-                 @"center" : NSStringFromCGPoint(CGPointMake(center.x + width / 2.f - 2.f, center.y + width / 3.f)),
+                 @"center" : NSStringFromCGPoint(CGPointMake(center.x + width / 2.f - half / 2.f, center.y + width / 2.f - half)),
                  @"frame" : NSStringFromCGRect(frame),
                  @"mask" : @YES,
                  @"angle" : @(240.f)
                  },
              @{
-                 @"center" : NSStringFromCGPoint(CGPointMake(center.x, center.y - width / 3.f)),
+                 @"center" : NSStringFromCGPoint(CGPointMake(center.x, center.y - width / 2.f + half)),
                  @"frame" : NSStringFromCGRect(frame),
                  @"mask" : @YES,
                  @"angle" : @(120.f)
@@ -356,40 +342,40 @@ static const CGFloat kSEScreenHeight() { return UIScreen.mainScreen.bounds.size.
 
 - (NSArray<NSDictionary *> *)fiveWithMaxWidth:(CGFloat const)maxWidth center:(CGPoint)center {
     
-    CGFloat const half = 1.5f;
-    CGFloat const width = (maxWidth - half * 4.f) / 2.f;
-    CGFloat const distance = ceil(sqrt(pow(width / 2.f, 2) / 2.f) - half);
+    CGFloat const half = 2.f;
+    CGFloat const width = maxWidth / 2.f - half;
+//    CGFloat const distance = ceil(sqrt(pow(width / 2.f, 2) / 2.f) - half);
     CGRect const frame = CGRectMake(0, 0, width, width);
     return @[
              @{
-                 @"center" : NSStringFromCGPoint(CGPointMake(center.x - distance, center.y + distance)),
-                 @"frame" : NSStringFromCGRect(frame),
-                 @"mask" : @YES,
-                 @"angle" : @(54.f)
-                 },
-             @{
-                 @"center" : NSStringFromCGPoint(CGPointMake(center.x + width / 2.f + distance, center.y + width/2.f + distance)),
-                 @"frame" : NSStringFromCGRect(frame),
-                 @"mask" : @YES,
-                 @"angle" : @(324.f)
-                 },
-             @{
-                 @"center" : NSStringFromCGPoint(CGPointMake(center.x + width/2.f, center.y + half / 2.f)),
-                 @"frame" : NSStringFromCGRect(frame),
-                 @"mask" : @YES,
-                 @"angle" : @(54.f + 180.f)
-                 },
-             @{
-                 @"center" : NSStringFromCGPoint(CGPointMake(center.x, center.y - width/2.f)),
+                 @"center" : NSStringFromCGPoint(CGPointMake(center.x, center.y - width / 2.f - half)),
                  @"frame" : NSStringFromCGRect(frame),
                  @"mask" : @YES,
                  @"angle" : @(144.f)
                  },
              @{
-                 @"center" : NSStringFromCGPoint(CGPointMake(center.x, center.y - width/2.f)),
+                 @"center" : NSStringFromCGPoint(CGPointMake(center.x - width / 2.f - half - 0.5f, center.y - half)),
                  @"frame" : NSStringFromCGRect(frame),
                  @"mask" : @YES,
-                 @"angle" : @(144.f)
+                 @"angle" : @(72.f)
+                 },
+             @{
+                 @"center" : NSStringFromCGPoint(CGPointMake(center.x - width/2.f + half + 0.5f, center.y  + width/2.f + half + 1.f)),
+                 @"frame" : NSStringFromCGRect(frame),
+                 @"mask" : @YES,
+                 @"angle" : @(0.f)
+                 },
+             @{
+                 @"center" : NSStringFromCGPoint(CGPointMake(center.x + width/2.f - half/2.f, center.y  + width/2.f + half + 1.f)),
+                 @"frame" : NSStringFromCGRect(frame),
+                 @"mask" : @YES,
+                 @"angle" : @(288.f)
+                 },
+             @{
+                 @"center" : NSStringFromCGPoint(CGPointMake(center.x + width/2.f + half*1.5f, center.y - half - 0.5f)),
+                 @"frame" : NSStringFromCGRect(frame),
+                 @"mask" : @YES,
+                 @"angle" : @(216.f)
                  }
              ];
 }
@@ -532,6 +518,6 @@ static const CGFloat kSEScreenHeight() { return UIScreen.mainScreen.bounds.size.
     return self.isAtLeft ? (UIRectCornerBottomRight | UIRectCornerTopRight) : (UIRectCornerBottomLeft | UIRectCornerTopLeft);
 }
 
-- (CGRect)floatingRect { return CGRectInset(self.bounds, kSEFloatingBallPadding(), kSEFloatingBallPadding()); }
+- (CGRect)floatingRect { return CGRectInset(self.bounds, kSEFloatingBallPadding, kSEFloatingBallPadding); }
 
 @end
