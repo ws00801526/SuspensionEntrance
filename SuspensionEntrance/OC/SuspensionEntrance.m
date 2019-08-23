@@ -478,6 +478,14 @@ static NSString *const kSEItemIconTask;
     
     if (![viewController se_canBeEntrance]) return;
     
+    NSArray<UIGestureRecognizer *> *gestures = [viewController.view.gestureRecognizers copy];
+    for (UIGestureRecognizer *gesture in gestures) {
+        if ([gesture isKindOfClass:[UIScreenEdgePanGestureRecognizer class]] && gesture.delegate == self) {
+            // may be this gesture is add before, remove it
+            [viewController.view removeGestureRecognizer:gesture];
+        }
+    }
+    
     UIScreenEdgePanGestureRecognizer *pan = [[UIScreenEdgePanGestureRecognizer alloc] initWithTarget:self action:@selector(handleTransition:)];
     pan.edges = UIRectEdgeLeft;
     pan.delegate = self;
