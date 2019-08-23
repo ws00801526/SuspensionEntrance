@@ -1,14 +1,8 @@
-
-
-[TOC]
-
-------
-
 # SuspensionEntrance	
 
 仿微信新版的悬浮窗入口功能
 
-![](Aug-23-2019 21-34-09.gif)
+![Aug-23-2019 21-34-09.gif](https://github.com/ws00801526/SuspensionEntrance/blob/master/Aug-23-2019%2021-34-09.gif)
 
 
 
