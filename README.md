@@ -8,7 +8,17 @@
 
 仿微信新版的悬浮窗入口功能
 
+![](./Aug-23-2019 21-34-09.gif)
+
+
+
 #### 1. 使用方式
+
+```ruby
+pod SuspensionExtrance ~> 0.1.0 // 使用podfile方式引入
+```
+
+
 
 ```objective-c
 
