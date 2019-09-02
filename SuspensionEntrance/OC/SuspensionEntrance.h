@@ -45,6 +45,8 @@ typedef void(^SEItemIconHandler)(UIImageView *iconView, id<SEItem> item);
 @property (copy  , nonatomic) SEItemIconHandler iconHandler;
 /// Should vibrate when the floating area is highlighted. Default is YES.
 @property (assign, nonatomic, getter=isVibratable) BOOL vibratable;
+/// Is entrance available. Default is YES.
+@property (assign, nonatomic, getter=isAvailable) BOOL available;
 /// The window where UI to be placed
 @property (weak, nonatomic, nullable) UIWindow *window;
 /// The entrance items
@@ -76,6 +78,11 @@ typedef void(^SEItemIconHandler)(UIImageView *iconView, id<SEItem> item);
  @param item the item
  */
 - (void)cancelEntranceItem:(__kindof UIViewController<SEItem> *)item;
+
+/**
+ Remove all entrance items
+ */
+- (void)clearEntranceItems;
 
 @end
 

@@ -41,9 +41,15 @@ static NSString *const kSEItemUserInfoKey = @"userInfo";
 
 @implementation UIViewController (SEPrivate)
 
-- (BOOL)se_isUsed { return self.navigationController != nil; }
+- (BOOL)se_isUsed {
+    
+    if (!self.se_canBeEntrance) return NO;
+    return self.navigationController != nil;
+}
 
-- (BOOL)se_canBeEntrance { return [self conformsToProtocol:@protocol(SEItem)]; }
+- (BOOL)se_canBeEntrance {
+    return [[self class] conformsToProtocol:@protocol(SEItem)];
+}
 
 - (BOOL)se_isEntrance {
     if (!self.se_canBeEntrance) return NO;
@@ -103,6 +109,7 @@ static NSString *const kSEItemIconTask;
 @end
 
 @implementation SuspensionEntrance
+@synthesize window = _window;
 
 #pragma mark - Life
 
@@ -113,6 +120,7 @@ static NSString *const kSEItemIconTask;
         
         _maxCount = 5;
         _vibratable = YES;
+        _available = YES;
         
         _items = [NSMutableArray array];
         _archivedPath = [[NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) firstObject] stringByAppendingPathComponent:@"entrance.items"];
@@ -158,6 +166,12 @@ static NSString *const kSEItemIconTask;
     
     if (![self isEntranceItem:item]) return;
     [self->_items removeObject:item];
+}
+
+- (void)clearEntranceItems {
+    [self->_items removeAllObjects];
+    [self.floatingBall removeFromSuperview];
+    if (self.archivedPath.length) [[NSFileManager defaultManager] removeItemAtPath:self.archivedPath error:nil];
 }
 
 #pragma mark - Private
@@ -238,8 +252,9 @@ static NSString *const kSEItemIconTask;
     
     [self.floatingList reloadData];
     [self.floatingBall reloadIconViews:self.items];
-    if (self.items.count <= 0) { [self.floatingBall removeFromSuperview]; }
+    if (self.items.count <= 0 || !self.isAvailable) { [self.floatingBall removeFromSuperview]; }
     else if (!self.floatingBall.superview) { [self.window addSubview:self.floatingBall]; }
+    else { [self.window bringSubviewToFront:self.floatingBall]; }
 }
 
 - (void)handleKeyboardWillShow:(NSNotification *)note {
@@ -305,7 +320,7 @@ static NSString *const kSEItemIconTask;
                     if (self.floatingArea.isEnabled) {
                         // floating is available
                         NSLog(@"floating is available");
-                        if (!self.floatingBall.superview) { [self.window addSubview:self.floatingBall]; }
+                        if (!self.floatingBall.superview && self.isAvailable) { [self.window addSubview:self.floatingBall]; }
                         if (![self.items containsObject:tempItem]) { [self->_items addObject:tempItem]; }
                         [self archiveEntranceItems];
                         [self.animator finishContinousPopAnimation];
@@ -420,6 +435,23 @@ static NSString *const kSEItemIconTask;
 
 - (void)setMaxCount:(NSUInteger)maxCount {
     _maxCount = MAX(1, MIN(5, maxCount));
+}
+
+- (void)setWindow:(UIWindow *)window {
+    if (_window == window) return;
+    _window = window;
+    if (self.floatingBall.superview) [self.floatingBall removeFromSuperview];
+    if (self.isAvailable && self.items.count) { [window addSubview:self.floatingBall]; }
+}
+
+- (void)setAvailable:(BOOL)available {
+
+    if (!available) {
+        [self.floatingBall removeFromSuperview];
+    } else {
+        if (self.floatingBall.superview) [self.floatingBall.superview bringSubviewToFront:self.floatingBall];
+        else if (self.items.count >= 1) [self.window addSubview:self.floatingBall];
+    }
 }
 
 #pragma mark - Getter

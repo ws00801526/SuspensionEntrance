@@ -26,7 +26,7 @@ static const CGFloat kSEScreenHeight() { return UIScreen.mainScreen.bounds.size.
     
     self = [super initWithFrame:frame];
     if (self) {
-        self.contentMode = UIViewContentModeCenter;
+        self.contentMode = UIViewContentModeScaleAspectFill;
     }
     return self;
 }

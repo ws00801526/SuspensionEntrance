@@ -59,7 +59,7 @@ static CGFloat const kSEFloatingListItemHeight = 60.f;
         
         UIButton *deleteButton = [UIButton buttonWithType:UIButtonTypeCustom];
         deleteButton.frame = CGRectMake(frame.size.width - 60.f, 0.0f, 60.f, kSEFloatingListItemHeight);
-        [deleteButton setTitle:@"X" forState:UIControlStateNormal];
+        [deleteButton setTitle:@"x" forState:UIControlStateNormal];
         [deleteButton setTitleColor:[UIColor blackColor] forState:UIControlStateNormal];
         [self addSubview:_deleteButton = deleteButton];
 
