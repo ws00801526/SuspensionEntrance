@@ -171,7 +171,7 @@ static NSString *const kSEItemIconTask;
 - (void)clearEntranceItems {
     [self->_items removeAllObjects];
     [self.floatingBall removeFromSuperview];
-    if (self.archivedPath.length) [[NSFileManager defaultManager] removeItemAtPath:self.archivedPath error:nil];
+    [[NSFileManager defaultManager] removeItemAtPath:self.archivedPath error:nil];
 }
 
 #pragma mark - Private
@@ -452,6 +452,15 @@ static NSString *const kSEItemIconTask;
         if (self.floatingBall.superview) [self.floatingBall.superview bringSubviewToFront:self.floatingBall];
         else if (self.items.count >= 1) [self.window addSubview:self.floatingBall];
     }
+}
+
+- (void)setArchivedPath:(NSString *)archivedPath {
+    
+    if ([_archivedPath isEqualToString:archivedPath]) return;
+    _archivedPath = archivedPath;
+    [self->_items removeAllObjects];
+    [self.floatingBall removeFromSuperview];
+    [self unarchiveEntranceItems];
 }
 
 #pragma mark - Getter
