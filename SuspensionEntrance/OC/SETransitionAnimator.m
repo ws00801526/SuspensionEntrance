@@ -100,6 +100,17 @@
     
     fromVC.view.frame = (CGRect){ CGPointMake(SCREEN_WIDTH * percent, fromVC.view.frame.origin.y) , fromVC.view.frame.size };
     toVC.view.frame = (CGRect){ CGPointMake((SCREEN_WIDTH / -3.f) * (1 - percent), toVC.view.frame.origin.y) , toVC.view.frame.size };
+    
+    UITabBar *tabBar = toVC.tabBarController.tabBar;
+    if (tabBar == nil) return;
+    CGFloat maxY =  tabBar.bounds.size.height * percent;
+#ifdef __IPHONE_11_0
+    if (@available(iOS 11.0, *)) maxY += tabBar.safeAreaInsets.bottom;
+#endif
+    maxY = MIN(maxY, tabBar.bounds.size.height);
+    tabBar.frame = (CGRect) { CGPointMake(0.f, toVC.view.bounds.size.height - maxY), tabBar.bounds.size };
+//    NSLog(@"this is percent :%.2f", percent);
+//    NSLog(@"this is frame :%@", NSStringFromCGRect(tabBar.frame));
 }
 
 - (void)finishContinousPopAnimationWithFastAnimating:(BOOL)fast {
@@ -114,6 +125,10 @@
     [UIView animateWithDuration:duration animations:^{
         fromVC.view.frame = (CGRect){ CGPointMake(SCREEN_WIDTH, fromVC.view.frame.origin.y) , fromVC.view.frame.size };
         toVC.view.frame = (CGRect){ CGPointMake(0.f, toVC.view.frame.origin.y) , toVC.view.frame.size };
+        UITabBar *tabBar = toVC.tabBarController.tabBar;
+        if (tabBar) {
+            tabBar.frame = (CGRect) { CGPointMake(0.f, toVC.view.bounds.size.height - tabBar.bounds.size.height), tabBar.bounds.size };
+        }
     } completion:^(BOOL finished) {
         [self.transitionContext completeTransition:!self.transitionContext.transitionWasCancelled];
     }];
@@ -158,6 +173,7 @@
     
     CGFloat const SCREEN_WIDTH = UIScreen.mainScreen.bounds.size.width;
     CGFloat const SCREEN_HEIGHT = UIScreen.mainScreen.bounds.size.height;
+    UIViewController *fromVC = [transitionContext viewControllerForKey:UITransitionContextFromViewControllerKey];
     UIViewController *toVC = [transitionContext viewControllerForKey:UITransitionContextToViewControllerKey];
     UIView *containerView = [transitionContext containerView];
     [containerView addSubview:self.coverView];
@@ -175,8 +191,14 @@
     maskLayerAnimation.delegate = (id<CAAnimationDelegate>)self;
     [maskLayer addAnimation:maskLayerAnimation forKey:@"xw_path"];
     
-    self.coverView.alpha = 0;
-    [UIView animateWithDuration:self.animationDuration animations:^{ self.coverView.alpha = 0.8; }];
+    self.coverView.alpha = 0.3f;
+    
+    UITabBar *tabBar = fromVC.tabBarController.tabBar;
+    tabBar.frame = (CGRect) { CGPointMake(0.f, fromVC.view.bounds.size.height - tabBar.bounds.size.height), tabBar.bounds.size };
+    [UIView animateWithDuration:self.animationDuration animations:^{
+        self.coverView.alpha = 0.8f;
+        tabBar.frame = (CGRect) { CGPointMake(fromVC.view.bounds.size.width, fromVC.view.bounds.size.height), tabBar.bounds.size };
+    }];
 }
 
 - (void)startRoundPopAnimation:(id<UIViewControllerContextTransitioning>)transitionContext {
@@ -204,7 +226,14 @@
     [maskLayer addAnimation:maskLayerAnimation forKey:@"xw_path"];
     
     self.coverView.alpha = 1.0f;
-    [UIView animateWithDuration:self.animationDuration animations:^{ self.coverView.alpha = 0.f; }];
+    
+    UITabBar *tabBar = toVC.tabBarController.tabBar;
+    CGPoint origin = CGPointMake(0.f, toVC.view.bounds.size.height - tabBar.bounds.size.height);
+    tabBar.frame = (CGRect) { CGPointMake(0.f, toVC.view.bounds.size.height), tabBar.bounds.size };
+    [UIView animateWithDuration:self.animationDuration animations:^{
+        self.coverView.alpha = 0.f;
+        tabBar.frame = (CGRect) { origin, tabBar.bounds.size };
+    }];
 }
 
 - (void)startContinousPopAnimation:(id<UIViewControllerContextTransitioning>)transitionContext {
@@ -214,6 +243,10 @@
     UIView *containerView = [transitionContext containerView];
     toVC.view.frame = CGRectMake(toView.bounds.size.width * -1.f / 3.f, 0, toView.bounds.size.width, toView.bounds.size.height);
     [containerView insertSubview:toVC.view atIndex:0];
+    
+    UITabBar *tabBar = toVC.tabBarController.tabBar;
+    if (tabBar == nil) return;
+    tabBar.frame = (CGRect) { CGPointMake(0.f, toView.bounds.size.height), tabBar.bounds.size };
 }
 
 #pragma mark - CAAnimationDelegate
@@ -230,6 +263,6 @@
     return _coverView;
 }
 
-- (NSTimeInterval)animationDuration { return 0.2f; }
+- (NSTimeInterval)animationDuration { return 0.3f; }
 
 @end

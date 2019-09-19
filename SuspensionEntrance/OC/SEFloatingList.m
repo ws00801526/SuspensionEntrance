@@ -8,7 +8,7 @@
 #import "SEFloatingList.h"
 #import "SuspensionEntrance.h"
 
-static CGFloat const kSEFloatingListItemHeight = 60.f;
+static CGFloat const kSEFloatingListItemHeight = 56.0f;
 
 @interface SEFloatingListItem ()
 
@@ -52,15 +52,16 @@ static CGFloat const kSEFloatingListItemHeight = 60.f;
         UILabel *titleLabel = [[UILabel alloc] initWithFrame:CGRectMake(55.f, padding, frame.size.width - 55.f - padding - 50.f, 40.f)];
         titleLabel.numberOfLines = 2;
         titleLabel.textColor = [UIColor colorWithRed:0.21 green:0.21 blue:0.21 alpha:1.f];
-        if (@available(iOS 8.0, *)) titleLabel.font = [UIFont systemFontOfSize:16.f weight:UIFontWeightMedium];
-        else titleLabel.font = [UIFont systemFontOfSize:16.f];
+        if (@available(iOS 8.0, *)) titleLabel.font = [UIFont systemFontOfSize:14.0 weight:UIFontWeightMedium];
+        else titleLabel.font = [UIFont systemFontOfSize:14.0];
         titleLabel.text = item.entranceTitle ? : @" ";
         [self addSubview:_titleLabel = titleLabel];
         
         UIButton *deleteButton = [UIButton buttonWithType:UIButtonTypeCustom];
         deleteButton.frame = CGRectMake(frame.size.width - 60.f, 0.0f, 60.f, kSEFloatingListItemHeight);
-        [deleteButton setTitle:@"x" forState:UIControlStateNormal];
-        [deleteButton setTitleColor:[UIColor blackColor] forState:UIControlStateNormal];
+//        [deleteButton setTitle:@"x" forState:UIControlStateNormal];
+//        [deleteButton setTitleColor:[UIColor blackColor] forState:UIControlStateNormal];
+        [deleteButton setImage:[UIImage imageNamed:@"web_entrance_close"] forState:UIControlStateNormal];
         [self addSubview:_deleteButton = deleteButton];
 
         self.layer.shadowColor = [UIColor colorWithRed:0.75f green:0.75f blue:0.75f alpha:1.0].CGColor;

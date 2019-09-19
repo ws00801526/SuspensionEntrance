@@ -319,7 +319,6 @@ static NSString *const kSEItemIconTask;
                 if (self.floatingArea.superview && self.floatingArea.isHighlighted) {
                     if (self.floatingArea.isEnabled) {
                         // floating is available
-                        NSLog(@"floating is available");
                         if (!self.floatingBall.superview && self.isAvailable) { [self.window addSubview:self.floatingBall]; }
                         if (![self.items containsObject:tempItem]) { [self->_items addObject:tempItem]; }
                         [self archiveEntranceItems];
@@ -335,12 +334,10 @@ static NSString *const kSEItemIconTask;
                     }
                 } else if (tempItem.se_isEntrance) {
                     // just ended
-                    NSLog(@"floating is entrance state");
                     [self.animator finishContinousPopAnimation];
                     [self.interactive finishInteractiveTransition];
                 } else {
                     // just ended
-                    NSLog(@"floating is normal state");
                     [self.animator finishContinousPopAnimationWithFastAnimating:YES];
                     [self.interactive finishInteractiveTransition];
                 }
