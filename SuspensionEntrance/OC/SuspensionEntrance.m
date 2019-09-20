@@ -121,8 +121,8 @@ static NSString *const kSEItemIconTask;
     
     SuspensionEntrance *entrance = [SuspensionEntrance shared];
     
-    BOOL visiable = entrance.isAvailable && entrance.floatingBall.superview && entrance.unusedItems.count >= 1;
-    if (self.navigationController == nil) visiable = NO;
+    BOOL visiable = entrance.isAvailable && entrance.floatingBall.superview && entrance.items.count >= 1;
+    if (![self isKindOfClass:[UINavigationController class]] && self.navigationController == nil) visiable = NO;
     if ([entrance.disabledClasses containsObject:[self class]]) visiable = NO;
     if (visiable) {
         [entrance handleKeyboardWillHide:nil];
@@ -303,7 +303,7 @@ static NSString *const kSEItemIconTask;
 - (void)handleKeyboardWillHide:(NSNotification *)note {
     
     BOOL visible = self.floatingBall.superview && self.unusedItems.count >= 1;
-    if (!visible) return;
+    if (!visible || self.floatingBall.alpha >= 1.f) return;
     [UIView animateWithDuration:.25f animations:^ { self.floatingBall.alpha = 1.0f; }];
 }
 
