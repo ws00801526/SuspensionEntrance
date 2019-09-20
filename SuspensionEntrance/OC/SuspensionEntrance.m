@@ -12,6 +12,8 @@
 #import "SEFloatingArea.h"
 #import "SEFloatingList.h"
 
+#import <objc/runtime.h>
+
 
 static NSString *const kSEItemClassKey = @"class";
 static NSString *const kSEItemTitleKey = @"title";
@@ -27,10 +29,13 @@ static NSString *const kSEItemUserInfoKey = @"userInfo";
 @property (strong, nonatomic) SETransitionAnimator *animator;
 @property (strong, nonatomic) UIPercentDrivenInteractiveTransition *interactive;
 
+@property (strong, nonatomic, readwrite) NSMutableSet<Class> *disabledClasses;
 @property (strong, nonatomic, readwrite) NSMutableArray<UIViewController<SEItem> *> *items;
 @property (strong, nonatomic, readonly)  NSArray<UIViewController<SEItem> *> *unusedItems;
 @property (strong, nonatomic, readonly)  UINavigationController *navigationController;
 
+- (void)handleKeyboardWillShow:(NSNotification *)note;
+- (void)handleKeyboardWillHide:(NSNotification *)note;
 @end
 
 @interface UIViewController (SEPrivate)
@@ -108,10 +113,40 @@ static NSString *const kSEItemIconTask;
 
 @end
 
+@implementation UIViewController (Private)
+
+- (void)se_viewWillAppear:(BOOL)animated {
+    
+    [self se_viewWillAppear:animated];
+    
+    SuspensionEntrance *entrance = [SuspensionEntrance shared];
+    
+    BOOL visiable = entrance.isAvailable && entrance.floatingBall.superview && entrance.unusedItems.count >= 1;
+    if (self.navigationController == nil) visiable = NO;
+    if ([entrance.disabledClasses containsObject:[self class]]) visiable = NO;
+    if (visiable) {
+        [entrance handleKeyboardWillHide:nil];
+#ifdef __IPHONE_13_0
+        if (@available(iOS 13.0, *)) [entrance.floatingBall.superview bringSubviewToFront:entrance.floatingBall];
+#endif
+    }
+    else { [entrance handleKeyboardWillShow:nil]; }
+}
+
+@end
+
 @implementation SuspensionEntrance
 @synthesize window = _window;
 
 #pragma mark - Life
+
++ (void)load {
+    SEL originalSelector = @selector(viewWillAppear:);
+    SEL swizzledSelector = @selector(se_viewWillAppear:);
+    Method originalMethod = class_getInstanceMethod([UIViewController class], originalSelector);
+    Method swizzledMethod = class_getInstanceMethod([UIViewController class], swizzledSelector);
+    method_exchangeImplementations(originalMethod, swizzledMethod);
+}
 
 - (instancetype)init {
     
@@ -123,6 +158,7 @@ static NSString *const kSEItemIconTask;
         _available = YES;
         
         _items = [NSMutableArray array];
+        _disabledClasses = [NSMutableSet set];
         _archivedPath = [[NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) firstObject] stringByAppendingPathComponent:@"entrance.items"];
 
         _floatingBall = [[SEFloatingBall alloc] initWithFrame:CGRectZero];
