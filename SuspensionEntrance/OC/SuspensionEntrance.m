@@ -47,8 +47,7 @@ static NSString *const kSEItemUserInfoKey = @"userInfo";
 @implementation UIViewController (SEPrivate)
 
 - (BOOL)se_isUsed {
-    
-    if (!self.se_canBeEntrance) return NO;
+    if (!self.se_isEntrance) return NO;
     return self.navigationController != nil;
 }
 
