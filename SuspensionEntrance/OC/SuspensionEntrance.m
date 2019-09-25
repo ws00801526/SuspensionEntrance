@@ -48,7 +48,7 @@ static NSString *const kSEItemUserInfoKey = @"userInfo";
 
 - (BOOL)se_isUsed {
     if (!self.se_isEntrance) return NO;
-    return self.navigationController != nil;
+    return [[self.navigationController viewControllers] containsObject:self];
 }
 
 - (BOOL)se_canBeEntrance {
@@ -118,12 +118,9 @@ static NSString *const kSEItemIconTask;
     
     [self se_viewWillAppear:animated];
     SuspensionEntrance *entrance = [SuspensionEntrance shared];
-    if (!entrance.isAvailable) return;
+    if (!entrance.isAvailable || entrance.interactive) return;
     
-    BOOL visible = entrance.isAvailable && entrance.floatingBall.superview;
-    if (self.se_isUsed) { visible = visible && (entrance.unusedItems.count >= 1); }
-    else { visible = visible && (entrance.items.count >= 1); }
-    
+    BOOL visible = entrance.isAvailable && entrance.floatingBall.superview && (entrance.unusedItems.count >= 1);
     if (![self isKindOfClass:[UINavigationController class]] && self.navigationController == nil) visible = NO;
     if ([entrance.disabledClasses containsObject:[self class]]) visible = NO;
     if (visible) {
@@ -351,7 +348,7 @@ static NSString *const kSEItemIconTask;
             [self.animator updateContinousPopAnimationPercent:tPoint.x / SCREEN_WIDTH];
             [self.interactive updateInteractiveTransition:tPoint.x / SCREEN_WIDTH];
             
-            if (self.floatingBall.alpha < 1.f && self.items.count >= 1) self.floatingBall.alpha = tPoint.x / SCREEN_WIDTH;
+            if (self.floatingBall.alpha < 1.f && self.unusedItems.count >= 1) self.floatingBall.alpha = tPoint.x / SCREEN_WIDTH;
         }
             break;
         case UIGestureRecognizerStateEnded:     // fall through
@@ -393,7 +390,7 @@ static NSString *const kSEItemIconTask;
             }
             self.interactive = nil;
             [self.floatingArea removeFromSuperview];
-            [UIView animateWithDuration:.25 animations:^{ self.floatingBall.alpha = (self.items.count >= 1) ? 1.f : .0f; }];
+            [UIView animateWithDuration:.25 animations:^{ self.floatingBall.alpha = (self.unusedItems.count >= 1) ? 1.f : .0f; }];
         }
             break;
         default: break;
@@ -593,10 +590,8 @@ static NSString *const kSEItemIconTask;
         } else if (fromVC.se_isEntrance) {
             CGRect const floatingRect = [self floatingRectOfOperation:operation];
             self.animator = [SETransitionAnimator roundPopAnimatorWithRect:floatingRect];
-            [UIView animateWithDuration:.25 animations:^{ self.floatingBall.alpha = (self.items.count >= 1) ? 1.f : .0f; }];
         } else {
             self.animator = nil;
-            [UIView animateWithDuration:.25 animations:^{ self.floatingBall.alpha = (self.items.count >= 1) ? 1.f : .0f; }];
         }
     } else if (operation == UINavigationControllerOperationPush) {
         if ((toVC.se_isEntrance && fromVC.se_isEntrance) || (toVC.se_isEntrance && !fromVC.se_isEntrance)) {
@@ -607,7 +602,6 @@ static NSString *const kSEItemIconTask;
         }
         
         NSArray<UIViewController<SEItem> *> *unusedItems = self.unusedItems;
-        if (unusedItems.count <= 0) self.floatingBall.alpha = .0f;
         [self.floatingBall reloadIconViews:unusedItems];
     }
     return self.animator;
