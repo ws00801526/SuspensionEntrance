@@ -118,19 +118,21 @@ static NSString *const kSEItemIconTask;
 - (void)se_viewWillAppear:(BOOL)animated {
     
     [self se_viewWillAppear:animated];
-    
     SuspensionEntrance *entrance = [SuspensionEntrance shared];
+    if (!entrance.isAvailable) return;
     
-    BOOL visiable = entrance.isAvailable && entrance.floatingBall.superview && entrance.items.count >= 1;
-    if (![self isKindOfClass:[UINavigationController class]] && self.navigationController == nil) visiable = NO;
-    if ([entrance.disabledClasses containsObject:[self class]]) visiable = NO;
-    if (visiable) {
+    BOOL visible = entrance.isAvailable && entrance.floatingBall.superview;
+    if (self.se_isUsed) { visible = visible && (entrance.unusedItems.count >= 1); }
+    else { visible = visible && (entrance.items.count >= 1); }
+    
+    if (![self isKindOfClass:[UINavigationController class]] && self.navigationController == nil) visible = NO;
+    if ([entrance.disabledClasses containsObject:[self class]]) visible = NO;
+    if (visible) {
         [entrance handleKeyboardWillHide:nil];
 #ifdef __IPHONE_13_0
         if (@available(iOS 13.0, *)) [entrance.floatingBall.superview bringSubviewToFront:entrance.floatingBall];
 #endif
-    }
-    else { [entrance handleKeyboardWillShow:nil]; }
+    } else { [SuspensionEntrance shared].floatingBall.alpha = .0f; }
 }
 
 @end
@@ -140,12 +142,14 @@ static NSString *const kSEItemIconTask;
 
 #pragma mark - Life
 
-+ (void)load {
-    SEL originalSelector = @selector(viewWillAppear:);
-    SEL swizzledSelector = @selector(se_viewWillAppear:);
-    Method originalMethod = class_getInstanceMethod([UIViewController class], originalSelector);
-    Method swizzledMethod = class_getInstanceMethod([UIViewController class], swizzledSelector);
-    method_exchangeImplementations(originalMethod, swizzledMethod);
++ (void)initialize {
+    if (self == [SuspensionEntrance class]) {
+        SEL originalSelector = @selector(viewWillAppear:);
+        SEL swizzledSelector = @selector(se_viewWillAppear:);
+        Method originalMethod = class_getInstanceMethod([UIViewController class], originalSelector);
+        Method swizzledMethod = class_getInstanceMethod([UIViewController class], swizzledSelector);
+        method_exchangeImplementations(originalMethod, swizzledMethod);
+    }
 }
 
 - (instancetype)init {
@@ -186,6 +190,7 @@ static NSString *const kSEItemIconTask;
 #pragma mark - Public
 
 - (BOOL)isEntranceItem:(__kindof UIViewController *)item {
+    
     if (![item conformsToProtocol:@protocol(SEItem)]) return NO;
     return [self.items containsObject:(UIViewController<SEItem> *)item];
 }
@@ -194,6 +199,8 @@ static NSString *const kSEItemIconTask;
     
     if ([self isEntranceItem:item]) return;
     [self->_items addObject:item];
+    [self.floatingBall reloadIconViews:self.items];
+    [self.floatingList reloadData];
     if (self.navigationController.viewControllers.lastObject == item)
         [self.navigationController popViewControllerAnimated:YES];
 }
@@ -202,10 +209,14 @@ static NSString *const kSEItemIconTask;
     
     if (![self isEntranceItem:item]) return;
     [self->_items removeObject:item];
+    [self.floatingBall reloadIconViews:self.items];
+    [self.floatingList reloadData];
 }
 
 - (void)clearEntranceItems {
     [self->_items removeAllObjects];
+    [self.floatingBall reloadIconViews:self.items];
+    [self.floatingList reloadData];
     [self.floatingBall removeFromSuperview];
     [[NSFileManager defaultManager] removeItemAtPath:self.archivedPath error:nil];
 }
