@@ -197,6 +197,8 @@ static NSString *const kSEItemIconTask;
     [self->_items addObject:item];
     [self.floatingBall reloadIconViews:self.items];
     [self.floatingList reloadData];
+    // !!! Fixed: add first entrance item, the floating ball doesnot has superview
+    if (self.floatingBall.superview == nil) { [self.window addSubview:self.floatingBall]; self.floatingBall.alpha = 1.f; }
     if (self.navigationController.viewControllers.lastObject == item)
         [self.navigationController popViewControllerAnimated:YES];
 }
