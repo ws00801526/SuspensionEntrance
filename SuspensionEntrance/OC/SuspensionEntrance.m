@@ -201,6 +201,7 @@ static NSString *const kSEItemIconTask;
     [self->_items addObject:item];
     [self.floatingBall reloadIconViews:self.items];
     [self.floatingList reloadData];
+    [self archiveEntranceItems];
     // !!! Fixed: add first entrance item, the floating ball doesnot has superview
     if (self.floatingBall.superview == nil) { [self.window addSubview:self.floatingBall]; self.floatingBall.alpha = 1.f; }
     if (self.navigationController.viewControllers.lastObject == item)
@@ -213,6 +214,7 @@ static NSString *const kSEItemIconTask;
     [self->_items removeObject:item];
     [self.floatingBall reloadIconViews:self.items];
     [self.floatingList reloadData];
+    [self archiveEntranceItems];
 }
 
 - (void)clearEntranceItems {
@@ -257,7 +259,11 @@ static NSString *const kSEItemIconTask;
     
     NSString *message = [NSString stringWithFormat:@"最多设置%d个浮窗", (int)self.maxCount];
     UIAlertController *alert = [UIAlertController alertControllerWithTitle:nil message:message preferredStyle:UIAlertControllerStyleAlert];
-    UIAlertAction *confirm = [UIAlertAction actionWithTitle:@"确定" style:UIAlertActionStyleDefault handler:NULL];
+    __weak typeof(self) wSelf = self;
+    UIAlertAction *confirm = [UIAlertAction actionWithTitle:@"确定" style:UIAlertActionStyleCancel handler:^(UIAlertAction * _Nonnull action) {
+        __strong typeof(wSelf) self = wSelf;
+        [self handleKeyboardWillHide:nil];
+    }];
     [alert addAction:confirm];
     [self.navigationController.visibleViewController showDetailViewController:alert sender:nil];
 }
