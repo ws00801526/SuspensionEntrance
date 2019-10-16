@@ -194,6 +194,10 @@ static NSString *const kSEItemIconTask;
 - (void)addEntranceItem:(__kindof UIViewController<SEItem> *)item {
     
     if ([self isEntranceItem:item]) return;
+    if (self->_items.count >= self.maxCount) {
+        [self showItemsFullAlert];
+        return;
+    }
     [self->_items addObject:item];
     [self.floatingBall reloadIconViews:self.items];
     [self.floatingList reloadData];
