@@ -11,7 +11,7 @@
 #import <AVFoundation/AVFoundation.h>
 #import <AudioToolbox/AudioToolbox.h>
 
-const CGFloat kSEFloatingAreaWidth = 150.f;
+const CGFloat kSEFloatingAreaWidth = 180.f;
 
 BOOL kSEFloatAreaContainsPoint(CGPoint point) {
     CGRect bounds = UIScreen.mainScreen.bounds;

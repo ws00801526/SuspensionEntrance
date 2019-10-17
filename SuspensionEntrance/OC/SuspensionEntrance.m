@@ -349,8 +349,8 @@ static NSString *const kSEItemIconTask;
             
             CGPoint tPoint = [pan translationInView:self.window];
             if (self.floatingArea.superview) {
-                CGFloat x = MAX(SCREEN_WIDTH - tPoint.x + kSEFloatingAreaWidth / 2.f, SCREEN_WIDTH - kSEFloatingAreaWidth);
-                CGFloat y = MAX(SCREEN_HEIGHT - tPoint.x + kSEFloatingAreaWidth / 2.f, SCREEN_HEIGHT - kSEFloatingAreaWidth);
+                CGFloat x = MAX(SCREEN_WIDTH - tPoint.x - kSEFloatingAreaWidth / 6.f, SCREEN_WIDTH - kSEFloatingAreaWidth);
+                CGFloat y = MAX(SCREEN_HEIGHT - tPoint.x + kSEFloatingAreaWidth / 6.f, SCREEN_HEIGHT - kSEFloatingAreaWidth);
                 self.floatingArea.frame = (CGRect){ CGPointMake(x, y), self.floatingArea.bounds.size };
                 
                 CGPoint innerPoint = [pan locationInView:self.window];
