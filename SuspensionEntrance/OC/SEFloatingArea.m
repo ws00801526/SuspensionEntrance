@@ -96,7 +96,9 @@ BOOL kSEFloatAreaContainsPoint(CGPoint point) {
     self.effect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleDark];
     self.backgroundColor = [UIColor blackColor];
     
-    CGPoint center = CGPointMake(self.bounds.size.width - 10.f - self.outerRadius, self.bounds.size.height - self.outerRadius * 2.f - 10.f);
+    UIOffset offset = UIOffsetMake(self.bounds.size.width * 0.1f + self.outerRadius,
+                                   self.bounds.size.height * 0.1f + self.outerRadius * 2.f);
+    CGPoint center = CGPointMake(self.bounds.size.width - offset.horizontal, self.bounds.size.height - offset.vertical);
 
     self.outerLayer = [CAShapeLayer layer];
     self.outerLayer.borderColor = [UIColor whiteColor].CGColor;
