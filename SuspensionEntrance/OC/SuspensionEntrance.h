@@ -43,6 +43,8 @@ typedef void(^SEItemIconHandler)(UIImageView *iconView, id<SEItem> item);
 @property (copy  , nonatomic) NSString *archivedPath;
 /// then handler to get correct icon of item.
 @property (copy  , nonatomic) SEItemIconHandler iconHandler;
+/// The image of close icon
+@property (strong, nonatomic, nullable) UIImage *closePlaceholder;
 /// Should vibrate when the floating area is highlighted. Default is YES.
 @property (assign, nonatomic, getter=isVibratable) BOOL vibratable;
 /// Is entrance available. Default is YES.
@@ -53,6 +55,7 @@ typedef void(^SEItemIconHandler)(UIImageView *iconView, id<SEItem> item);
 @property (strong, nonatomic, readonly) NSArray<UIViewController<SEItem> *> *items;
 /// The entrance class should not be appeared
 @property (strong, nonatomic, readonly) NSMutableSet<Class> *disabledClasses;
+
 + (instancetype)shared;
 
 /**

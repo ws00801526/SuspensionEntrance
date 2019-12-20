@@ -61,7 +61,7 @@ static CGFloat const kSEFloatingListItemHeight = 56.0f;
         deleteButton.frame = CGRectMake(frame.size.width - 60.f, 0.0f, 60.f, kSEFloatingListItemHeight);
 //        [deleteButton setTitle:@"x" forState:UIControlStateNormal];
 //        [deleteButton setTitleColor:[UIColor blackColor] forState:UIControlStateNormal];
-        [deleteButton setImage:[UIImage imageNamed:@"web_entrance_close"] forState:UIControlStateNormal];
+        [deleteButton setImage:[SuspensionEntrance shared].closePlaceholder ? : [UIImage imageNamed:@"web_entrance_close"] forState:UIControlStateNormal];
         [self addSubview:_deleteButton = deleteButton];
 
         self.layer.shadowColor = [UIColor colorWithRed:0.75f green:0.75f blue:0.75f alpha:1.0].CGColor;

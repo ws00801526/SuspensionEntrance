@@ -8,7 +8,7 @@
 
 Pod::Spec.new do |s|
   s.name             = 'SuspensionEntrance'
-  s.version          = '0.2.1'
+  s.version          = '0.2.3'
   s.summary          = '仿微信实现悬浮窗入口功能'
   s.homepage         = 'https://github.com/ws00801526/SuspensionEntrance'
   s.license          = { :type => 'MIT', :file => 'LICENSE' }

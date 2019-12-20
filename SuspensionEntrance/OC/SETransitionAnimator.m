@@ -71,6 +71,8 @@
     [UIView animateWithDuration:duration animations:^{
         self.coverView.alpha = 0.3;
         toVC.view.frame = (CGRect){ CGPointMake(0, toVC.view.frame.origin.y), toVC.view.frame.size };
+        UITabBar *tabBar = toVC.tabBarController.tabBar;
+        if (tabBar) tabBar.frame = (CGRect) { CGPointMake(0.f, toVC.view.bounds.size.height - tabBar.bounds.size.height), tabBar.bounds.size };
     } completion:^(BOOL finished) {
         [self.coverView removeFromSuperview];
     }];
