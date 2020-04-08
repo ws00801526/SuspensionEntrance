@@ -497,7 +497,8 @@ static NSString *const kSEItemIconTask;
 }
 
 - (void)setAvailable:(BOOL)available {
-
+    
+    _available = available;
     if (!available) {
         [self.floatingBall removeFromSuperview];
     } else {
