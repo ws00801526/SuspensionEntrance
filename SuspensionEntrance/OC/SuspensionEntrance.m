@@ -341,7 +341,7 @@ static NSString *const kSEItemIconTask;
             [tempItem.navigationController popViewControllerAnimated:YES];
             
             if (tempItem.se_isEntrance) [self.floatingArea removeFromSuperview];
-            else if (!self.floatingArea.superview) [self.window addSubview:self.floatingArea];
+            else if (!self.floatingArea.superview && self.isAvailable) [self.window addSubview:self.floatingArea];
             self.floatingArea.enabled = self.items.count < self.maxCount;
             break;
         case UIGestureRecognizerStateChanged:
