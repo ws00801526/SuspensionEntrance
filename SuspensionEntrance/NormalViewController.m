@@ -7,6 +7,8 @@
 
 #import "NormalViewController.h"
 #import "EntranceViewController.h"
+#import "BaseNavigationController.h"
+#import "PresentNavigationController.h"
 
 @interface SEImageView : UIImageView
 @end
@@ -35,6 +37,10 @@
 
 
 #pragma mark - UITableViewDelegate & UITableViewSource
+
+- (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView {
+    return 2;
+}
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
     
@@ -66,15 +72,50 @@
     return 55.f;
 }
 
+- (CGFloat)tableView:(UITableView *)tableView heightForHeaderInSection:(NSInteger)section {
+    return 30.f;
+}
+
+- (NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section {
+    return section == 0 ? @"Push" : @"Present";
+}
+
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
-    
+
+//    CGFloat const radius = 20.f;
+//    
+//    UIBezierPath *startPath = [UIBezierPath bezierPathWithRoundedRect:CGRectInset(self.view.frame, 100.f, 100.f) cornerRadius:radius];
+//    UIBezierPath *endPath = [UIBezierPath bezierPathWithRoundedRect:CGRectMake(200.f, 200.f, 50.f, 50.f) cornerRadius:radius];
+//    CAShapeLayer *maskLayer = [CAShapeLayer layer];
+//    maskLayer.fillColor = [UIColor blackColor].CGColor;
+//    maskLayer.path = endPath.CGPath;
+//    maskLayer.frame = CGRectInset(self.view.frame, 100.f, 100.f);
+//    self.view.layer.mask = maskLayer;
+//    CABasicAnimation *maskLayerAnimation = [CABasicAnimation animationWithKeyPath:@"path"];
+//    maskLayerAnimation.fromValue = (__bridge id)(startPath.CGPath);
+//    maskLayerAnimation.toValue = (__bridge id)(endPath.CGPath);
+//    maskLayerAnimation.duration = 2.f;
+//    maskLayerAnimation.delegate = (id<CAAnimationDelegate>)self;
+//    [maskLayer addAnimation:maskLayerAnimation forKey:@"xw_path"];
+//    
+//    return;
+//    
     NSDictionary *item = [self.items objectAtIndex:indexPath.row];
     EntranceViewController *controller = (EntranceViewController *)[self.storyboard instantiateViewControllerWithIdentifier:@"EntranceViewController"];
     controller.entranceTitle = [item objectForKey:@"title"];
     controller.entranceIconUrl = [item objectForKey:@"iconUrl"];
     controller.entranceUserInfo = [item objectForKey:@"userInfo"];
-    [self.navigationController pushViewController:controller animated:YES];
+    if (indexPath.section == 0) {
+        [self.navigationController pushViewController:controller animated:YES];
+    } else {
+        PresentNavigationController *nav = [[PresentNavigationController alloc] initWithRootViewController:controller];
+        [self.navigationController presentViewController:nav animated:YES completion:NULL];
+    }
+}
+
+- (void)animationDidStop:(CAAnimation *)anim finished:(BOOL)flag {
+    self.view.layer.mask = nil;
 }
 
 #pragma mark - Getter

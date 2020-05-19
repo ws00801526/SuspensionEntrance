@@ -25,7 +25,6 @@
     return controller;
 }
 
-
 - (void)viewDidLoad {
     [super viewDidLoad];
 
@@ -36,6 +35,16 @@
     
     UIBarButtonItem *next = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemPlay target:self action:@selector(pushNormalController)];
     self.navigationItem.rightBarButtonItem = next;
+    
+    if (self.presentingViewController) {
+        UIBarButtonItem *back = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemClose target:self action:@selector(viewBack)];
+        self.navigationItem.leftBarButtonItem = back;
+    }
+}
+
+- (void)viewBack {
+    if (self.presentingViewController) [self.presentingViewController dismissViewControllerAnimated:YES completion:NULL];
+    else [self.navigationController popViewControllerAnimated:YES];
 }
 
 - (void)pushNormalController {

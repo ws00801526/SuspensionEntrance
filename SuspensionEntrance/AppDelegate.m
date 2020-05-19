@@ -26,6 +26,8 @@
 //        [self.window insertSubview:ballView atIndex:100000];
 //    });
         
+    [SuspensionEntrance shared].available = YES;
+    [SuspensionEntrance shared].closePlaceholder = [UIImage imageNamed:@"web_entrance_close"];
     return YES;
 }
 

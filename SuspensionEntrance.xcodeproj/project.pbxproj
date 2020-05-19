@@ -20,6 +20,7 @@
 		974741B022FBBE9200281B55 /* SEFloatingBall.m in Sources */ = {isa = PBXBuildFile; fileRef = 974741AF22FBBE9200281B55 /* SEFloatingBall.m */; };
 		974741B322FD074100281B55 /* SETransitionAnimator.m in Sources */ = {isa = PBXBuildFile; fileRef = 974741B222FD074100281B55 /* SETransitionAnimator.m */; };
 		974741B922FD3DFF00281B55 /* SEFloatingArea.m in Sources */ = {isa = PBXBuildFile; fileRef = 974741B822FD3DFF00281B55 /* SEFloatingArea.m */; };
+		97C4F5F02472803C00236421 /* PresentNavigationController.m in Sources */ = {isa = PBXBuildFile; fileRef = 97C4F5EF2472803C00236421 /* PresentNavigationController.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -47,6 +48,8 @@
 		974741B222FD074100281B55 /* SETransitionAnimator.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = SETransitionAnimator.m; sourceTree = "<group>"; };
 		974741B722FD3DFF00281B55 /* SEFloatingArea.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SEFloatingArea.h; sourceTree = "<group>"; };
 		974741B822FD3DFF00281B55 /* SEFloatingArea.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = SEFloatingArea.m; sourceTree = "<group>"; };
+		97C4F5EE2472803C00236421 /* PresentNavigationController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PresentNavigationController.h; sourceTree = "<group>"; };
+		97C4F5EF2472803C00236421 /* PresentNavigationController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PresentNavigationController.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -88,6 +91,8 @@
 				974741A522FBB88E00281B55 /* EntranceViewController.m */,
 				974741A722FBB8BE00281B55 /* BaseNavigationController.h */,
 				974741A822FBB8BE00281B55 /* BaseNavigationController.m */,
+				97C4F5EE2472803C00236421 /* PresentNavigationController.h */,
+				97C4F5EF2472803C00236421 /* PresentNavigationController.m */,
 				9747419122FBB7F600281B55 /* Main.storyboard */,
 				9747419422FBB7FA00281B55 /* Assets.xcassets */,
 				9747419622FBB7FA00281B55 /* LaunchScreen.storyboard */,
@@ -188,6 +193,7 @@
 				9747419B22FBB7FA00281B55 /* main.m in Sources */,
 				974741B922FD3DFF00281B55 /* SEFloatingArea.m in Sources */,
 				9747418D22FBB7F600281B55 /* AppDelegate.m in Sources */,
+				97C4F5F02472803C00236421 /* PresentNavigationController.m in Sources */,
 				974741A622FBB88E00281B55 /* EntranceViewController.m in Sources */,
 				974741A322FBB88300281B55 /* NormalViewController.m in Sources */,
 				972FD4CB230256F6004CB039 /* SEFloatingList.m in Sources */,
