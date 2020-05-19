@@ -199,8 +199,7 @@ static const CGFloat kSEScreenHeight() { return UIScreen.mainScreen.bounds.size.
 #pragma mark - Public
 
 - (void)reloadIconViews:(NSArray<id<SEItem>> *)items {
-    
-    
+
     if (self.iconViews.count < items.count) {
         for (NSUInteger i = self.iconViews.count; i < items.count; i ++) {
             SEFloatingBallItem *imageView = [[SEFloatingBallItem alloc] init];

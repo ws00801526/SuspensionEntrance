@@ -7,6 +7,14 @@
 
 #import "SETransitionAnimator.h"
 
+#ifndef SCREEN_WIDTH
+    #define SCREEN_WIDTH UIScreen.mainScreen.bounds.size.width
+#endif
+
+#ifndef SCREEN_HEIGHT
+    #define SCREEN_HEIGHT UIScreen.mainScreen.bounds.size.height
+#endif
+
 @interface SETransitionAnimator ()
 @property (assign, nonatomic) CGRect floatingRect;
 @property (strong, nonatomic) UIView *coverView;
@@ -43,21 +51,26 @@
 
 #pragma mark - Public
 
-- (void)finishContinousPopAnimation {
+- (void)finishContinousAnimation {
     
-    CGFloat const SCREEN_WIDTH = UIScreen.mainScreen.bounds.size.width;
-    CGFloat const SCREEN_HEIGHT = UIScreen.mainScreen.bounds.size.height;
     UIViewController *fromVC = [self.transitionContext viewControllerForKey:UITransitionContextFromViewControllerKey];
     UIViewController *toVC = [self.transitionContext viewControllerForKey:UITransitionContextToViewControllerKey];
+    BOOL const isPresented = fromVC.presentingViewController != nil;
     [fromVC.view addSubview:self.coverView];
-    //当前fromVC.view有偏移，需要重置
-    CGFloat const currentX = fromVC.view.frame.origin.x;
-    fromVC.view.frame = (CGRect) { CGPointMake(0, fromVC.view.frame.origin.y), fromVC.view.frame.size };
-
-    UIBezierPath *startPath = [UIBezierPath bezierPathWithRoundedRect:CGRectMake(currentX, -self.radius, SCREEN_WIDTH + self.radius * 2, SCREEN_HEIGHT + self.radius * 2) cornerRadius:self.radius];
+    // 当前fromVC.view有偏移，需要重置
+    CGFloat const currentOffset = isPresented ? fromVC.view.frame.origin.y : fromVC.view.frame.origin.x;
+    fromVC.view.frame = (CGRect){ CGPointZero, fromVC.view.frame.size };
+//    if (isPresented) fromVC.view.frame = (CGRect) { CGPointMake(0.f, fromVC.view.frame.origin.y), fromVC.view.frame.size };
+//    else fromVC.view.frame = (CGRect) { CGPointMake(fromVC.view.frame.origin.x, 0.f), fromVC.view.frame.size };
+    
+    CGRect roundedRect = CGRectMake(currentOffset, -self.radius, SCREEN_WIDTH + self.radius * 2, SCREEN_HEIGHT + self.radius * 2);
+    if (isPresented) roundedRect = CGRectMake(-self.radius, currentOffset, SCREEN_WIDTH + self.radius * 2, SCREEN_HEIGHT + self.radius * 2);
+    UIBezierPath *startPath = [UIBezierPath bezierPathWithRoundedRect:roundedRect cornerRadius:self.radius];
     UIBezierPath *endPath = [UIBezierPath bezierPathWithRoundedRect:self.floatingRect cornerRadius:self.radius];
     CAShapeLayer *maskLayer = [CAShapeLayer layer];
+    maskLayer.fillColor = [UIColor blackColor].CGColor;
     maskLayer.path = endPath.CGPath;
+    maskLayer.frame = fromVC.view.frame;
     fromVC.view.layer.mask = maskLayer;
     CABasicAnimation *maskLayerAnimation = [CABasicAnimation animationWithKeyPath:@"path"];
     maskLayerAnimation.fromValue = (__bridge id)(startPath.CGPath);
@@ -66,11 +79,11 @@
     maskLayerAnimation.delegate = (id<CAAnimationDelegate>)self;
     [maskLayer addAnimation:maskLayerAnimation forKey:@"xw_path"];
     
-    CGFloat duration = (1 - currentX / SCREEN_WIDTH) * self.animationDuration;
+    CGFloat duration = (1 - (isPresented ? (currentOffset / SCREEN_HEIGHT) : (currentOffset / SCREEN_WIDTH))) * self.animationDuration;
     self.coverView.alpha = 0;
     [UIView animateWithDuration:duration animations:^{
-        self.coverView.alpha = 0.3;
-        toVC.view.frame = (CGRect){ CGPointMake(0, toVC.view.frame.origin.y), toVC.view.frame.size };
+        self.coverView.alpha = isPresented ? 0.f : 0.3;
+        if (!isPresented) toVC.view.frame = (CGRect){ CGPointMake(0, toVC.view.frame.origin.y), toVC.view.frame.size };
         UITabBar *tabBar = toVC.tabBarController.tabBar;
         if (tabBar) tabBar.frame = (CGRect) { CGPointMake(0.f, toVC.view.bounds.size.height - tabBar.bounds.size.height), tabBar.bounds.size };
     } completion:^(BOOL finished) {
@@ -78,30 +91,39 @@
     }];
 }
 
-- (void)cancelContinousPopAnimation {
+- (void)cancelContinousAnimation {
     
-    CGFloat const SCREEN_WIDTH = UIScreen.mainScreen.bounds.size.width;
     UIViewController *fromVC = [self.transitionContext viewControllerForKey:UITransitionContextFromViewControllerKey];
+    BOOL isPresented = fromVC.presentingViewController != nil;
     UIViewController *toVC = [self.transitionContext viewControllerForKey:UITransitionContextToViewControllerKey];
-    CGFloat percent = fromVC.view.frame.origin.x / SCREEN_WIDTH;
+    CGFloat percent = isPresented ? fromVC.view.frame.origin.y / SCREEN_HEIGHT : fromVC.view.frame.origin.x / SCREEN_WIDTH;
     [UIView animateWithDuration:self.animationDuration * percent animations:^{
-        fromVC.view.frame = (CGRect){ CGPointMake(0.f, fromVC.view.frame.origin.y) , fromVC.view.frame.size };
-        toVC.view.frame = (CGRect){ CGPointMake(-SCREEN_WIDTH / 3.f, toVC.view.frame.origin.y) , toVC.view.frame.size };
+        if (isPresented) fromVC.view.frame = (CGRect){ CGPointMake(fromVC.view.frame.origin.x, 0.f) , fromVC.view.frame.size };
+        else {
+            fromVC.view.frame = (CGRect){ CGPointMake(0.f, fromVC.view.frame.origin.y) , fromVC.view.frame.size };
+            toVC.view.frame = (CGRect){ CGPointMake(-SCREEN_WIDTH / 3.f, toVC.view.frame.origin.y) , toVC.view.frame.size };
+        }
     } completion:^(BOOL finished) {
-        toVC.view.frame = (CGRect){ CGPointMake(0, toVC.view.frame.origin.y) , toVC.view.frame.size };
+        if (!isPresented) toVC.view.frame = (CGRect){ CGPointMake(0, toVC.view.frame.origin.y) , toVC.view.frame.size };
         [self.transitionContext completeTransition:!self.transitionContext.transitionWasCancelled];
     }];
 }
 
-- (void)updateContinousPopAnimationPercent:(CGFloat)percent {
+- (void)updateContinousAnimationPercent:(CGFloat)percent {
     
     percent = MIN(1.f, MAX(0.f, percent));
-    CGFloat const SCREEN_WIDTH = UIScreen.mainScreen.bounds.size.width;
     UIViewController *fromVC = [self.transitionContext viewControllerForKey:UITransitionContextFromViewControllerKey];
     UIViewController *toVC = [self.transitionContext viewControllerForKey:UITransitionContextToViewControllerKey];
+    BOOL const isPresented = fromVC.presentingViewController != nil;
     
-    fromVC.view.frame = (CGRect){ CGPointMake(SCREEN_WIDTH * percent, fromVC.view.frame.origin.y) , fromVC.view.frame.size };
-    toVC.view.frame = (CGRect){ CGPointMake((SCREEN_WIDTH / -3.f) * (1 - percent), toVC.view.frame.origin.y) , toVC.view.frame.size };
+    if (isPresented) {
+        fromVC.view.frame = (CGRect){ CGPointMake(0.f, SCREEN_HEIGHT * percent) , fromVC.view.frame.size };
+    } else {
+        fromVC.view.frame = (CGRect){ CGPointMake(SCREEN_WIDTH * percent, fromVC.view.frame.origin.y) , fromVC.view.frame.size };
+        toVC.view.frame = (CGRect){ CGPointMake((SCREEN_WIDTH / -3.f) * (1 - percent), toVC.view.frame.origin.y) , toVC.view.frame.size };
+    }
+    
+    self.coverView.alpha = (1 - percent) * 0.7f;
     
     UITabBar *tabBar = toVC.tabBarController.tabBar;
     if (tabBar == nil) return;
@@ -111,22 +133,23 @@
 #endif
     maxY = MIN(maxY, tabBar.bounds.size.height);
     tabBar.frame = (CGRect) { CGPointMake(0.f, toVC.view.bounds.size.height - maxY), tabBar.bounds.size };
-//    NSLog(@"this is percent :%.2f", percent);
-//    NSLog(@"this is frame :%@", NSStringFromCGRect(tabBar.frame));
 }
 
-- (void)finishContinousPopAnimationWithFastAnimating:(BOOL)fast {
+- (void)finishContinousAnimationWithFastAnimating:(BOOL)fast {
     
-    CGFloat const SCREEN_WIDTH = UIScreen.mainScreen.bounds.size.width;
     UIViewController *fromVC = [self.transitionContext viewControllerForKey:UITransitionContextFromViewControllerKey];
     UIViewController *toVC = [self.transitionContext viewControllerForKey:UITransitionContextToViewControllerKey];
-    
+    BOOL const isPresented = fromVC.presentingViewController != nil;
     CGFloat duration = 0.2f;
     if (fast) duration = (1 - fromVC.view.frame.origin.x / SCREEN_WIDTH) * self.animationDuration;
     
     [UIView animateWithDuration:duration animations:^{
-        fromVC.view.frame = (CGRect){ CGPointMake(SCREEN_WIDTH, fromVC.view.frame.origin.y) , fromVC.view.frame.size };
-        toVC.view.frame = (CGRect){ CGPointMake(0.f, toVC.view.frame.origin.y) , toVC.view.frame.size };
+        if (isPresented) {
+            fromVC.view.frame = (CGRect){ CGPointMake(fromVC.view.frame.origin.x, SCREEN_HEIGHT) , fromVC.view.frame.size };
+        } else {
+            fromVC.view.frame = (CGRect){ CGPointMake(SCREEN_WIDTH, fromVC.view.frame.origin.y) , fromVC.view.frame.size };
+            toVC.view.frame = (CGRect){ CGPointMake(0.f, toVC.view.frame.origin.y) , toVC.view.frame.size };
+        }
         UITabBar *tabBar = toVC.tabBarController.tabBar;
         if (tabBar) {
             tabBar.frame = (CGRect) { CGPointMake(0.f, toVC.view.bounds.size.height - tabBar.bounds.size.height), tabBar.bounds.size };
@@ -173,12 +196,11 @@
 
 - (void)startRoundPushAnimation:(id<UIViewControllerContextTransitioning>)transitionContext {
     
-    CGFloat const SCREEN_WIDTH = UIScreen.mainScreen.bounds.size.width;
-    CGFloat const SCREEN_HEIGHT = UIScreen.mainScreen.bounds.size.height;
     UIViewController *fromVC = [transitionContext viewControllerForKey:UITransitionContextFromViewControllerKey];
     UIViewController *toVC = [transitionContext viewControllerForKey:UITransitionContextToViewControllerKey];
     UIView *containerView = [transitionContext containerView];
     [containerView addSubview:self.coverView];
+    toVC.view.frame = CGRectMake(0.f, 0.f, SCREEN_WIDTH, SCREEN_HEIGHT);
     [containerView addSubview:toVC.view];
     UIBezierPath *startPath = [UIBezierPath bezierPathWithRoundedRect:self.floatingRect cornerRadius:self.radius];
     UIBezierPath *endPath = [UIBezierPath bezierPathWithRoundedRect:CGRectMake(-self.radius, -self.radius, SCREEN_WIDTH + self.radius * 2, SCREEN_HEIGHT + self.radius * 2) cornerRadius:self.radius];
@@ -193,20 +215,17 @@
     maskLayerAnimation.delegate = (id<CAAnimationDelegate>)self;
     [maskLayer addAnimation:maskLayerAnimation forKey:@"xw_path"];
     
-    self.coverView.alpha = 0.3f;
-    
+    self.coverView.alpha = 0.0f;
     UITabBar *tabBar = fromVC.tabBarController.tabBar;
     tabBar.frame = (CGRect) { CGPointMake(0.f, fromVC.view.bounds.size.height - tabBar.bounds.size.height), tabBar.bounds.size };
     [UIView animateWithDuration:self.animationDuration animations:^{
-        self.coverView.alpha = 0.8f;
+        self.coverView.alpha = 0.6f;
         tabBar.frame = (CGRect) { CGPointMake(fromVC.view.bounds.size.width, fromVC.view.bounds.size.height), tabBar.bounds.size };
     }];
 }
 
 - (void)startRoundPopAnimation:(id<UIViewControllerContextTransitioning>)transitionContext {
     
-    CGFloat const SCREEN_WIDTH = UIScreen.mainScreen.bounds.size.width;
-    CGFloat const SCREEN_HEIGHT = UIScreen.mainScreen.bounds.size.height;
     UIViewController *fromVC = [transitionContext viewControllerForKey:UITransitionContextFromViewControllerKey];
     UIViewController *toVC = [transitionContext viewControllerForKey:UITransitionContextToViewControllerKey];
     UIView *containerView = [transitionContext containerView];
@@ -227,25 +246,32 @@
     maskLayerAnimation.delegate = (id<CAAnimationDelegate>)self;
     [maskLayer addAnimation:maskLayerAnimation forKey:@"xw_path"];
     
-    self.coverView.alpha = 1.0f;
+    self.coverView.alpha = 0.6f;
     
     UITabBar *tabBar = toVC.tabBarController.tabBar;
     CGPoint origin = CGPointMake(0.f, toVC.view.bounds.size.height - tabBar.bounds.size.height);
     tabBar.frame = (CGRect) { CGPointMake(0.f, toVC.view.bounds.size.height), tabBar.bounds.size };
     [UIView animateWithDuration:self.animationDuration animations:^{
-        self.coverView.alpha = 0.f;
+        self.coverView.alpha = 0.0f;
         tabBar.frame = (CGRect) { origin, tabBar.bounds.size };
     }];
 }
 
 - (void)startContinousPopAnimation:(id<UIViewControllerContextTransitioning>)transitionContext {
     
+    UIViewController *fromVC = [transitionContext viewControllerForKey:UITransitionContextFromViewControllerKey];
     UIViewController *toVC = [transitionContext viewControllerForKey:UITransitionContextToViewControllerKey];
     UIView *toView = [transitionContext viewForKey:UITransitionContextToViewKey];
     UIView *containerView = [transitionContext containerView];
-    toVC.view.frame = CGRectMake(toView.bounds.size.width * -1.f / 3.f, 0, toView.bounds.size.width, toView.bounds.size.height);
+    BOOL const isPresented = fromVC.presentingViewController != nil;
+    if (!isPresented) toVC.view.frame = CGRectMake(toView.bounds.size.width * -1.f / 3.f, 0, toView.bounds.size.width, toView.bounds.size.height);
     [containerView insertSubview:toVC.view atIndex:0];
     
+    if (isPresented) {
+        self.coverView.alpha = 0.7f;
+        [toVC.view addSubview:self.coverView];
+    }
+       
     UITabBar *tabBar = toVC.tabBarController.tabBar;
     if (tabBar == nil) return;
     tabBar.frame = (CGRect) { CGPointMake(0.f, toView.bounds.size.height), tabBar.bounds.size };
@@ -268,3 +294,6 @@
 - (NSTimeInterval)animationDuration { return 0.3f; }
 
 @end
+
+#undef SCREEN_WIDTH
+#undef SCREEN_HEIGHT

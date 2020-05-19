@@ -94,4 +94,8 @@ typedef void(^SEItemIconHandler)(UIImageView *iconView, id<SEItem> item);
 @interface SuspensionEntrance (NavigationControllerDelegate) <UINavigationControllerDelegate>
 @end
 
+@interface SuspensionEntrance (TransitioningDelegate) <UIViewControllerTransitioningDelegate>
+
+@end
+
 NS_ASSUME_NONNULL_END

@@ -118,7 +118,11 @@ static NSString *const kSEItemIconTask;
     
     [self se_viewWillAppear:animated];
     SuspensionEntrance *entrance = [SuspensionEntrance shared];
+
     if (!entrance.isAvailable || entrance.interactive) return;
+    UIView *parentView = self.view.superview;
+    while (parentView) { if (parentView == entrance.window) break; else parentView = parentView.superview; }
+    if (parentView == nil || parentView != entrance.window) return;
     
     BOOL visible = entrance.isAvailable && entrance.floatingBall.superview && (entrance.unusedItems.count >= 1);
     if (![self isKindOfClass:[UINavigationController class]] && self.navigationController == nil) visible = NO;
@@ -128,7 +132,7 @@ static NSString *const kSEItemIconTask;
 #ifdef __IPHONE_13_0
         if (@available(iOS 13.0, *)) [entrance.floatingBall.superview bringSubviewToFront:entrance.floatingBall];
 #endif
-    } else { [SuspensionEntrance shared].floatingBall.alpha = .0f; }
+    } else { entrance.floatingBall.alpha = .0f; }
 }
 
 @end
@@ -230,13 +234,17 @@ static NSString *const kSEItemIconTask;
 - (void)pushEntranceItem:(UIViewController<SEItem> *)item {
 
     if (![self.items containsObject:item]) return;
-    NSMutableArray<UIViewController *> *viewControllers = [self.navigationController.viewControllers mutableCopy];
-    if ([viewControllers containsObject:item]) {
-        [self.navigationController popToViewController:item animated:YES];
+    if ([item isKindOfClass:[UINavigationController class]]) {
+        [self.navigationController presentViewController:item animated:YES completion:NULL];
     } else {
-        if (viewControllers.lastObject.se_isEntrance) { [viewControllers removeLastObject]; }
-        [viewControllers addObject:item];
-        [self.navigationController setViewControllers:[viewControllers copy] animated:YES];
+        NSMutableArray<UIViewController *> *viewControllers = [self.navigationController.viewControllers mutableCopy];
+        if ([viewControllers containsObject:item]) {
+            [self.navigationController popToViewController:item animated:YES];
+        } else {
+            if (viewControllers.lastObject.se_isEntrance) { [viewControllers removeLastObject]; }
+            [viewControllers addObject:item];
+            [self.navigationController setViewControllers:[viewControllers copy] animated:YES];
+        }
     }
 }
 
@@ -308,8 +316,8 @@ static NSString *const kSEItemIconTask;
     [self.floatingList reloadData];
     [self.floatingBall reloadIconViews:self.items];
     if (self.items.count <= 0 || !self.isAvailable) { [self.floatingBall removeFromSuperview]; }
-    else if (!self.floatingBall.superview) { [self.window addSubview:self.floatingBall]; }
-    else { [self.window bringSubviewToFront:self.floatingBall]; }
+    else if (!self.floatingBall.superview) { self.floatingBall.alpha = 1.f; [self.window addSubview:self.floatingBall]; }
+    else { self.floatingBall.alpha = 1.f; [self.window bringSubviewToFront:self.floatingBall]; }
 }
 
 - (void)handleKeyboardWillShow:(NSNotification *)note {
@@ -333,31 +341,30 @@ static NSString *const kSEItemIconTask;
     CGFloat const SCREEN_WIDTH = UIScreen.mainScreen.bounds.size.width;
     CGFloat const SCREEN_HEIGHT = UIScreen.mainScreen.bounds.size.height;
     UIViewController<SEItem> *tempItem = (UIViewController<SEItem> *)pan.view.nextResponder;
-    
+    BOOL isPresented = tempItem.presentingViewController != nil;
     switch (pan.state) {
             
         case UIGestureRecognizerStateBegan:
             self.interactive = [[UIPercentDrivenInteractiveTransition alloc] init];
-            [tempItem.navigationController popViewControllerAnimated:YES];
-            
+            if (isPresented) [tempItem dismissViewControllerAnimated:YES completion:NULL];
+            else [tempItem.navigationController popViewControllerAnimated:YES];
             if (tempItem.se_isEntrance) [self.floatingArea removeFromSuperview];
             else if (!self.floatingArea.superview && self.isAvailable) [self.window addSubview:self.floatingArea];
             self.floatingArea.enabled = self.items.count < self.maxCount;
             break;
         case UIGestureRecognizerStateChanged:
         {
-            
             CGPoint tPoint = [pan translationInView:self.window];
             if (self.floatingArea.superview) {
-                CGFloat x = MAX(SCREEN_WIDTH - tPoint.x - kSEFloatingAreaWidth / 6.f, SCREEN_WIDTH - kSEFloatingAreaWidth);
-                CGFloat y = MAX(SCREEN_HEIGHT - tPoint.x + kSEFloatingAreaWidth / 6.f, SCREEN_HEIGHT - kSEFloatingAreaWidth);
+                CGFloat x = MAX(SCREEN_WIDTH - tPoint.x - kSEFloatingAreaWidth / 4.f, SCREEN_WIDTH - kSEFloatingAreaWidth);
+                CGFloat y = MAX(SCREEN_HEIGHT - tPoint.x - kSEFloatingAreaWidth / 4.f, SCREEN_HEIGHT - kSEFloatingAreaWidth);
                 self.floatingArea.frame = (CGRect){ CGPointMake(x, y), self.floatingArea.bounds.size };
                 
                 CGPoint innerPoint = [pan locationInView:self.window];
                 self.floatingArea.highlighted = kSEFloatAreaContainsPoint(innerPoint);
             }
             
-            [self.animator updateContinousPopAnimationPercent:tPoint.x / SCREEN_WIDTH];
+            [self.animator updateContinousAnimationPercent:tPoint.x / SCREEN_WIDTH];
             [self.interactive updateInteractiveTransition:tPoint.x / SCREEN_WIDTH];
             
             if (self.floatingBall.alpha < 1.f && self.unusedItems.count >= 1) self.floatingBall.alpha = tPoint.x / SCREEN_WIDTH;
@@ -377,27 +384,27 @@ static NSString *const kSEItemIconTask;
                         if (!self.floatingBall.superview && self.isAvailable) { [self.window addSubview:self.floatingBall]; }
                         if (![self.items containsObject:tempItem]) { [self->_items addObject:tempItem]; }
                         [self archiveEntranceItems];
-                        [self.animator finishContinousPopAnimation];
+                        [self.animator finishContinousAnimation];
                         [self.interactive finishInteractiveTransition];
                         [self.floatingList reloadData];
                         [self.floatingBall reloadIconViews:self.items];
                     } else {
                         // floating is full
-                        [self.animator cancelContinousPopAnimation];
+                        [self.animator cancelContinousAnimation];
                         [self.interactive cancelInteractiveTransition];
                         [self showItemsFullAlert];
                     }
                 } else if (tempItem.se_isEntrance) {
                     // just ended
-                    [self.animator finishContinousPopAnimation];
+                    [self.animator finishContinousAnimation];
                     [self.interactive finishInteractiveTransition];
                 } else {
                     // just ended
-                    [self.animator finishContinousPopAnimationWithFastAnimating:YES];
+                    [self.animator finishContinousAnimationWithFastAnimating:YES];
                     [self.interactive finishInteractiveTransition];
                 }
             } else {
-                [self.animator cancelContinousPopAnimation];
+                [self.animator cancelContinousAnimation];
                 [self.interactive cancelInteractiveTransition];
             }
             self.interactive = nil;
@@ -528,16 +535,6 @@ static NSString *const kSEItemIconTask;
 
     if ([controller isKindOfClass:[UINavigationController class]]) return controller;
     if (controller.navigationController) return controller.navigationController;
-
-    // ???: is it necessary?
-//    while (controller.presentingViewController) {
-//        controller = controller.presentingViewController;
-//        if ([controller isKindOfClass:[UINavigationController class]] || controller.navigationController) break;
-//    }
-//
-//    if ([controller isKindOfClass:[UINavigationController class]]) return controller;
-//    if (controller.navigationController) return controller.navigationController;
-    
     return nil;
 }
 
@@ -568,9 +565,8 @@ static NSString *const kSEItemIconTask;
     self.interactive = nil;
     [self.floatingBall reloadIconViews:self.unusedItems];
     
-    if (navigationController.viewControllers.count <= 1) return;
-    
     if (![viewController se_canBeEntrance]) return;
+    if (navigationController.viewControllers.count <= 1) return;
     
     NSArray<UIGestureRecognizer *> *gestures = [viewController.view.gestureRecognizers copy];
     for (UIGestureRecognizer *gesture in gestures) {
@@ -618,6 +614,59 @@ static NSString *const kSEItemIconTask;
         [self.floatingBall reloadIconViews:unusedItems];
     }
     return self.animator;
+}
+
+@end
+
+@implementation SuspensionEntrance (TransitioningDelegate)
+
+- (id<UIViewControllerAnimatedTransitioning>)animationControllerForDismissedController:(UIViewController *)dismissed {
+    
+    if (self.interactive) {
+        CGRect const floatingRect = [self floatingRectOfOperation:UINavigationControllerOperationPop];
+        self.animator = [SETransitionAnimator continuousPopAnimatorWithRect:floatingRect];
+    } else if (dismissed.se_isEntrance) {
+        CGRect const floatingRect = [self floatingRectOfOperation:UINavigationControllerOperationPop];
+        self.animator = [SETransitionAnimator roundPopAnimatorWithRect:floatingRect];
+    } else {
+        self.animator = nil;
+    }
+    return self.animator;
+}
+
+- (id<UIViewControllerAnimatedTransitioning>)animationControllerForPresentedController:(UIViewController *)toVC presentingController:(UIViewController *)fromVC sourceController:(UIViewController *)source {
+    
+    if ((toVC.se_isEntrance && fromVC.se_isEntrance) || (toVC.se_isEntrance && !fromVC.se_isEntrance)) {
+        CGRect const floatingRect = [self floatingRectOfOperation:UINavigationControllerOperationPush];
+        self.animator = [SETransitionAnimator roundPushAnimatorWithRect:floatingRect];
+    } else {
+        self.animator = nil;
+    }
+    
+    NSArray<UIViewController<SEItem> *> *unusedItems = self.unusedItems;
+    [self.floatingBall reloadIconViews:unusedItems];
+    NSLog(@"presented :%@ -- presenting :%@  -- source :%@", toVC, fromVC, source);
+    
+    NSArray<UIGestureRecognizer *> *gestures = [toVC.view.gestureRecognizers copy];
+    for (UIGestureRecognizer *gesture in gestures) {
+        if ([gesture isKindOfClass:[UIScreenEdgePanGestureRecognizer class]] && gesture.delegate == self) {
+            // may be this gesture is add before, remove it
+            [toVC.view removeGestureRecognizer:gesture];
+        }
+    }
+    
+    UIScreenEdgePanGestureRecognizer *pan = [[UIScreenEdgePanGestureRecognizer alloc] initWithTarget:self action:@selector(handleTransition:)];
+    pan.edges = UIRectEdgeLeft;
+    pan.delegate = self;
+    [toVC.view addGestureRecognizer:pan];
+
+    return self.animator;
+}
+
+//- (nullable id <UIViewControllerInteractiveTransitioning>)interactionControllerForPresentation:(id <UIViewControllerAnimatedTransitioning>)animator;
+
+- (nullable id <UIViewControllerInteractiveTransitioning>)interactionControllerForDismissal:(id <UIViewControllerAnimatedTransitioning>)animator {
+    return self.interactive;
 }
 
 @end

@@ -25,10 +25,10 @@ NS_ASSUME_NONNULL_BEGIN
 + (instancetype)roundPopAnimatorWithRect:(CGRect)rect;
 + (instancetype)continuousPopAnimatorWithRect:(CGRect)rect;
 
-- (void)finishContinousPopAnimation;
-- (void)cancelContinousPopAnimation;
-- (void)updateContinousPopAnimationPercent:(CGFloat)precent;
-- (void)finishContinousPopAnimationWithFastAnimating:(BOOL)fast;
+- (void)finishContinousAnimation;
+- (void)cancelContinousAnimation;
+- (void)updateContinousAnimationPercent:(CGFloat)precent;
+- (void)finishContinousAnimationWithFastAnimating:(BOOL)fast;
 
 @end
 
