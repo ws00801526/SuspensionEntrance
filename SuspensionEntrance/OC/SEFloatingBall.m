@@ -507,6 +507,8 @@ static const CGFloat kSEScreenHeight() { return UIScreen.mainScreen.bounds.size.
     [super setFrame:frame];
     self.effectView.frame = self.bounds;
     [self.effectView updateMaskCorners:self.corners];
+    BOOL isLeft = (self.center.x < kSEScreenWidth() / 2.0);
+    self.autoresizingMask = isLeft ? UIViewAutoresizingFlexibleRightMargin : UIViewAutoresizingFlexibleLeftMargin;
 }
 
 #pragma mark - Getter
