@@ -47,8 +47,11 @@ static NSString *const kSEItemUserInfoKey = @"userInfo";
 @implementation UIViewController (SEPrivate)
 
 - (BOOL)se_isUsed {
-    if (!self.se_isEntrance) return NO;
-    return [[self.navigationController viewControllers] containsObject:self];
+    if (!self.se_isEntrance) return false;
+    NSInteger index = [[self.navigationController viewControllers] indexOfObject:self];
+    if (index == NSNotFound) return false;
+    // !!!: first index should'd be entrance. fix bug while set viewControllers contains the removed controller on iOS14.
+    return self.presentingViewController || index != 0;
 }
 
 - (BOOL)se_canBeEntrance {
@@ -118,17 +121,12 @@ static NSString *const kSEItemIconTask;
     
     [self se_viewWillAppear:animated];
     SuspensionEntrance *entrance = [SuspensionEntrance shared];
-
     if (!entrance.isAvailable || entrance.interactive) return;
-    UIView *parentView = self.view.superview;
-    while (parentView) { if (parentView == entrance.window) break; else parentView = parentView.superview; }
-    if (parentView == nil || parentView != entrance.window) return;
-    
     BOOL visible = entrance.isAvailable && entrance.floatingBall.superview && (entrance.unusedItems.count >= 1);
     if (![self isKindOfClass:[UINavigationController class]] && self.navigationController == nil) visible = NO;
     if ([entrance.disabledClasses containsObject:[self class]]) visible = NO;
     if (visible) {
-        [entrance handleKeyboardWillHide:nil];
+        if (entrance.floatingBall.alpha < 1.f) [UIView animateWithDuration:0.25f animations:^{ entrance.floatingBall.alpha = 1.f; }];
 #ifdef __IPHONE_13_0
         if (@available(iOS 13.0, *)) [entrance.floatingBall.superview bringSubviewToFront:entrance.floatingBall];
 #endif
@@ -484,7 +482,7 @@ static NSString *const kSEItemIconTask;
 - (void)floatingListWillHide:(SEFloatingList *)list {
     
     NSArray<UIViewController<SEItem> *> *unusedItems = self.unusedItems;
-    [self.floatingBall reloadIconViews:unusedItems];
+//    [self.floatingBall reloadIconViews:unusedItems];
 
     CGFloat alpha = unusedItems.count >= 1 ? 1.f : self.floatingBall.alpha;
     [UIView animateWithDuration:0.25 animations:^{ self.floatingBall.alpha = alpha; }];
@@ -609,9 +607,7 @@ static NSString *const kSEItemIconTask;
         } else {
             self.animator = nil;
         }
-        
-        NSArray<UIViewController<SEItem> *> *unusedItems = self.unusedItems;
-        [self.floatingBall reloadIconViews:unusedItems];
+//        [self.floatingBall reloadIconViews:self.unusedItems];
     }
     return self.animator;
 }
@@ -643,9 +639,8 @@ static NSString *const kSEItemIconTask;
         self.animator = nil;
     }
     
-    NSArray<UIViewController<SEItem> *> *unusedItems = self.unusedItems;
-    [self.floatingBall reloadIconViews:unusedItems];
-    NSLog(@"presented :%@ -- presenting :%@  -- source :%@", toVC, fromVC, source);
+//    NSArray<UIViewController<SEItem> *> *unusedItems = self.unusedItems;
+//    [self.floatingBall reloadIconViews:unusedItems];
     
     NSArray<UIGestureRecognizer *> *gestures = [toVC.view.gestureRecognizers copy];
     for (UIGestureRecognizer *gesture in gestures) {

@@ -16,6 +16,7 @@ static const CGFloat kSEScreenWidth() { return UIScreen.mainScreen.bounds.size.w
 static const CGFloat kSEScreenHeight() { return UIScreen.mainScreen.bounds.size.height; }
 
 @interface SEFloatingBallItem : UIImageView
+@property (nonatomic, weak) id<SEItem> item;
 @end
 
 @implementation SEFloatingBallItem
@@ -28,6 +29,12 @@ static const CGFloat kSEScreenHeight() { return UIScreen.mainScreen.bounds.size.
     if (self) {
         self.contentMode = UIViewContentModeScaleAspectFill;
     }
+    return self;
+}
+
+- (instancetype)initWithItem:(id<SEItem>)item {
+    self = [super initWithFrame:CGRectZero];
+    if (self) { self->_item = item; }
     return self;
 }
 
@@ -152,7 +159,7 @@ static const CGFloat kSEScreenHeight() { return UIScreen.mainScreen.bounds.size.
 @property (strong, nonatomic) NSMutableArray<SEFloatingBallItem *> *iconViews;
 
 @property (assign, nonatomic, readonly) CGFloat radius;
-
+@property (strong, nonatomic, readonly) NSArray<id<SEItem>> *oldItems;
 
 @end
 
@@ -200,19 +207,31 @@ static const CGFloat kSEScreenHeight() { return UIScreen.mainScreen.bounds.size.
 
 - (void)reloadIconViews:(NSArray<id<SEItem>> *)items {
 
-    if (self.iconViews.count < items.count) {
-        for (NSUInteger i = self.iconViews.count; i < items.count; i ++) {
-            SEFloatingBallItem *imageView = [[SEFloatingBallItem alloc] init];
-            imageView.center = CGPointMake(CGRectGetMidX(self.floatingRect), CGRectGetMidY(self.floatingRect));
-            [self addSubview:imageView];
-            [self.iconViews addObject:imageView];
+    NSMutableSet<id<SEItem>> *newItems = [NSMutableSet setWithArray:items];
+    NSMutableSet<id<SEItem>> *oldItems = [NSMutableSet setWithArray:self.oldItems];
+    if ([newItems isEqualToSet:oldItems]) return;
+
+    for (id<SEItem> item in items) {
+        SEFloatingBallItem *theBall = nil;
+        for (SEFloatingBallItem *ball in self.iconViews) {
+            if (ball.item == item) { theBall = ball; break; }
         }
-    } else if (self.iconViews.count > items.count) {
-        NSRange range = NSMakeRange(items.count, self.iconViews.count - items.count);
-        NSArray<SEFloatingBallItem *> *items = [self.iconViews subarrayWithRange:range];
-        [self.iconViews removeObjectsInRange:range];
-        [items makeObjectsPerformSelector:@selector(removeFromSuperview)];
-    } else { return; }
+        if (theBall == nil) theBall = [[SEFloatingBallItem alloc] initWithItem:item];
+        theBall.item = item;
+        if (![self.iconViews containsObject:theBall]) {
+            [self.iconViews addObject:theBall];
+            [self addSubview:theBall];
+            theBall.center = CGPointMake(CGRectGetMidX(self.floatingRect), CGRectGetMidY(self.floatingRect));
+        }
+    }
+    
+    // remove unnecessary ballItem
+    for (SEFloatingBallItem *ball in [self.iconViews copy]) {
+        if (![items containsObject:ball.item] || ball.item == nil) {
+            [ball removeFromSuperview];
+            [self.iconViews removeObject:ball];
+        }
+    }
     
     if (self.iconViews.count <= 0) return;
     NSArray<NSDictionary *> *frames = [self.frames objectAtIndex:self.iconViews.count - 1];
@@ -520,5 +539,13 @@ static const CGFloat kSEScreenHeight() { return UIScreen.mainScreen.bounds.size.
 }
 
 - (CGRect)floatingRect { return CGRectInset(self.bounds, kSEFloatingBallPadding, kSEFloatingBallPadding); }
+
+- (NSArray<id<SEItem>> *)oldItems {
+    NSMutableArray<id<SEItem>> *oldItems = [NSMutableArray arrayWithCapacity:self.iconViews.count];
+    for (SEFloatingBallItem *ball in self.iconViews) {
+        if (ball.item != nil) [oldItems insertObject:ball.item atIndex:0];
+    }
+    return [oldItems copy];
+}
 
 @end
