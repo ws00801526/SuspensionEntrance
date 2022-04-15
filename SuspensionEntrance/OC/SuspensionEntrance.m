@@ -29,6 +29,7 @@ static NSString *const kSEItemUserInfoKey = @"userInfo";
 @property (strong, nonatomic) SETransitionAnimator *animator;
 @property (strong, nonatomic) UIPercentDrivenInteractiveTransition *interactive;
 
+@property (strong, nonatomic, readwrite) NSMutableSet<Class> *ignoredClasses;
 @property (strong, nonatomic, readwrite) NSMutableSet<Class> *disabledClasses;
 @property (strong, nonatomic, readwrite) NSMutableArray<UIViewController<SEItem> *> *items;
 @property (strong, nonatomic, readonly)  NSArray<UIViewController<SEItem> *> *unusedItems;
@@ -120,10 +121,21 @@ static NSString *const kSEItemIconTask;
 - (void)se_viewWillAppear:(BOOL)animated {
     
     [self se_viewWillAppear:animated];
+    
     SuspensionEntrance *entrance = [SuspensionEntrance shared];
     if (!entrance.isAvailable || entrance.interactive) return;
+    if ([entrance.ignoredClasses containsObject:[self class]]) return;
+    if ([NSStringFromClass([self class]) containsString:@"JXSegmentedView"]) return;
+    
+    UITabBarController *vc = (UITabBarController *)[UIApplication sharedApplication].keyWindow.rootViewController;
+    if ([vc isKindOfClass:[UITabBarController class]]) {
+        vc = [vc selectedViewController];
+        if ([vc isKindOfClass:[UINavigationController class]]) vc = [(UINavigationController *)vc visibleViewController];
+        if (vc == self) return;
+    }
+    
     BOOL visible = entrance.isAvailable && entrance.floatingBall.superview && (entrance.unusedItems.count >= 1);
-    if (![self isKindOfClass:[UINavigationController class]] && self.navigationController == nil) visible = NO;
+    if (self.presentingViewController != nil || self.navigationController == nil) visible = NO;
     if ([entrance.disabledClasses containsObject:[self class]]) visible = NO;
     if (visible) {
         if (entrance.floatingBall.alpha < 1.f) [UIView animateWithDuration:0.25f animations:^{ entrance.floatingBall.alpha = 1.f; }];
@@ -160,6 +172,7 @@ static NSString *const kSEItemIconTask;
         _available = YES;
         
         _items = [NSMutableArray array];
+        _ignoredClasses = [NSMutableSet set];
         _disabledClasses = [NSMutableSet set];
         _archivedPath = [[NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) firstObject] stringByAppendingPathComponent:@"entrance.items"];
 

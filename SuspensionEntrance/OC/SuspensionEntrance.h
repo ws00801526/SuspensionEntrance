@@ -53,8 +53,10 @@ typedef void(^SEItemIconHandler)(UIImageView *iconView, id<SEItem> item);
 @property (weak, nonatomic, nullable) UIWindow *window;
 /// The entrance items
 @property (strong, nonatomic, readonly) NSArray<UIViewController<SEItem> *> *items;
-/// The entrance class should not be appeared
+/// The entrance class should not be appeared.
 @property (strong, nonatomic, readonly) NSMutableSet<Class> *disabledClasses;
+/// The entrance class should be ignored.
+@property (strong, nonatomic, readonly) NSMutableSet<Class> *ignoredClasses;
 
 + (instancetype)shared;
 
