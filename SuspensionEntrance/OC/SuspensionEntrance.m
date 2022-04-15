@@ -127,12 +127,12 @@ static NSString *const kSEItemIconTask;
     if ([entrance.ignoredClasses containsObject:[self class]]) return;
     if ([NSStringFromClass([self class]) containsString:@"JXSegmentedView"]) return;
     
-    UITabBarController *vc = (UITabBarController *)[UIApplication sharedApplication].keyWindow.rootViewController;
-    if ([vc isKindOfClass:[UITabBarController class]]) {
-        vc = [vc selectedViewController];
-        if ([vc isKindOfClass:[UINavigationController class]]) vc = [(UINavigationController *)vc visibleViewController];
-        if (vc == self) return;
-    }
+//    UITabBarController *vc = (UITabBarController *)[UIApplication sharedApplication].keyWindow.rootViewController;
+//    if ([vc isKindOfClass:[UITabBarController class]]) {
+//        vc = [vc selectedViewController];
+//        if ([vc isKindOfClass:[UINavigationController class]]) vc = [(UINavigationController *)vc visibleViewController];
+//        if (vc == self) return;
+//    }
     
     BOOL visible = entrance.isAvailable && entrance.floatingBall.superview && (entrance.unusedItems.count >= 1);
     if (self.presentingViewController != nil || self.navigationController == nil) visible = NO;
