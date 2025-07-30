@@ -49,7 +49,7 @@ static CGFloat const kSEFloatingListItemHeight = 56.0f;
         iconView.layer.mask = maskLayer;
         [self addSubview:_iconView = iconView];
         
-        UILabel *titleLabel = [[UILabel alloc] initWithFrame:CGRectMake(55.f, padding, frame.size.width - 55.f - padding - 50.f, 40.f)];
+        UILabel *titleLabel = [[UILabel alloc] initWithFrame:CGRectMake(55.f, 10.5, frame.size.width - 55.f - padding - 50.f, 35.0)];
         titleLabel.numberOfLines = 2;
         titleLabel.textColor = [UIColor colorWithRed:0.21 green:0.21 blue:0.21 alpha:1.f];
         if (@available(iOS 8.0, *)) titleLabel.font = [UIFont systemFontOfSize:14.0 weight:UIFontWeightMedium];

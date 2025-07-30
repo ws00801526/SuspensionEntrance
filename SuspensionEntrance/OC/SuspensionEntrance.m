@@ -254,7 +254,11 @@ static NSString *const kSEItemIconTask;
         } else {
             if (viewControllers.lastObject.se_isEntrance) { [viewControllers removeLastObject]; }
             [viewControllers addObject:item];
-            [self.navigationController setViewControllers:[viewControllers copy] animated:YES];
+            if (@available(iOS 17, *)) {
+                [self.navigationController setViewControllers:[viewControllers copy] animated:false];
+            } else {
+                [self.navigationController setViewControllers:[viewControllers copy] animated:YES];
+            }
         }
     }
 }
